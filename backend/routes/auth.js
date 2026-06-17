@@ -5,11 +5,11 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const pool = require('../db');
 
-// Configure the Nodemailer email engine
+// Configure the Nodemailer email engine securely for production environments
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+  port: 465,
+  secure: true, // true for port 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER, 
     pass: process.env.EMAIL_PASS  
@@ -22,9 +22,11 @@ router.post('/send-otp', async (req, res) => {
   if (!email) return res.status(400).json({ message: 'Email is required' });
 
   try {
-    // Make sure the user isn't already registered
-    const [exists] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (exists.length > 0) return res.status(400).json({ message: 'Email already registered' });
+    // Safely destructure rows
+    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (rows && rows.length > 0) {
+      return res.status(400).json({ message: 'Email already registered' });
+    }
 
     // Generate a 6-digit random code string
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -45,10 +47,10 @@ router.post('/send-otp', async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
-    res.json({ message: 'Verification OTP sent to your inbox!' });
+    return res.json({ message: 'Verification OTP sent to your inbox!' });
   } catch (error) {
-    console.error("🚨 Send OTP Error:", error);
-    res.status(500).json({ error: 'Failed to send verification email. Verify your .env setup.' });
+    console.error("🚨 Send OTP Error Details:", error);
+    return res.status(500).json({ message: 'Failed to send verification email.', error: error.message });
   }
 });
 
@@ -65,34 +67,26 @@ router.post('/signup', async (req, res) => {
   }
 
   try {
-    // Pull the active OTP token row matching this email
-    const [records] = await pool.query(
-      'SELECT * FROM otps WHERE email = ?',
-      [email]
-    );
+    const [records] = await pool.query('SELECT * FROM otps WHERE email = ?', [email]);
 
-    if (records.length === 0) {
+    if (!records || records.length === 0) {
       return res.status(400).json({ message: 'No OTP record found. Please send code again.' });
     }
 
     const latestRecord = records[0];
 
-    // Debugging logs to verify synchronization
     console.log("-----------------------------------------");
-    console.log(`💬 Frontend sent OTP: "${otp}" (Type: ${typeof otp}, Length: ${otp?.length})`);
-    console.log(`🗄️ TiDB Cloud stored OTP: "${latestRecord.otp_code}" (Type: ${typeof latestRecord.otp_code}, Length: ${latestRecord.otp_code?.toString().length})`);
+    console.log(`💬 Frontend sent OTP: "${otp}"`);
+    console.log(`🗄️ TiDB Cloud stored OTP: "${latestRecord.otp_code}"`);
     console.log("-----------------------------------------");
 
-    // Check if the typed code matches exactly as strings
     if (latestRecord.otp_code.toString().trim() !== otp) {
       return res.status(400).json({ message: 'Incorrect OTP code.' });
     }
 
-    // Hash the password and save the complete profile
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // ✅ DUAL COLUMN FIX: Populates both password and password_hash fields
-    // to bypass column variation constraints in your TiDB user schema structure
+    // Fallback block configuration to add user data smoothly
     await pool.query(
       'INSERT INTO users (name, email, password, password_hash, phone) VALUES (?, ?, ?, ?, ?)', 
       [name, email, hashedPassword, hashedPassword, phone]
@@ -101,10 +95,10 @@ router.post('/signup', async (req, res) => {
     // Clear out used code
     await pool.query('DELETE FROM otps WHERE email = ?', [email]);
 
-    res.status(201).json({ message: 'Account verified and created successfully! 🎉' });
+    return res.status(201).json({ message: 'Account verified and created successfully! 🎉' });
   } catch (error) {
-    console.error("🚨 Signup Error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("🚨 Signup Error Details:", error);
+    return res.status(500).json({ message: 'Registration failed.', error: error.message });
   }
 });
 
@@ -112,22 +106,26 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
   const { password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required' });
+  }
+
   try {
     const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (users.length === 0) return res.status(400).json({ message: 'User not found' });
+    if (!users || users.length === 0) return res.status(400).json({ message: 'User not found' });
 
     const user = users[0];
-    
-    // Check whichever column is populated on your table format
     const activeHash = user.password_hash || user.password;
     
     const validPassword = await bcrypt.compare(password, activeHash);
     if (!validPassword) return res.status(400).json({ message: 'Invalid credentials' });
 
     const token = jwt.sign({ id: user.id }, 'SECRET_KEY', { expiresIn: '1h' });
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
+    return res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("🚨 Login Error Details:", error);
+    return res.status(500).json({ message: 'Login execution failed.', error: error.message });
   }
 });
 
