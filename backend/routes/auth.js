@@ -8,8 +8,8 @@ const pool = require('../db');
 // Configure the Nodemailer email engine securely for production environments
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, 
+  port: 587,
+  secure: false, // true for port 465, false for port 587
   auth: {
     user: process.env.EMAIL_USER, 
     pass: process.env.EMAIL_PASS  
