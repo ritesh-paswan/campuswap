@@ -4,7 +4,6 @@ import axios from 'axios';
 const API_URL = "https://campuswap.onrender.com";
 
 function Signup({ switchToLogin }) {
-
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,7 +17,6 @@ function Signup({ switchToLogin }) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -26,71 +24,66 @@ function Signup({ switchToLogin }) {
     });
   };
 
-
   const handleRequestOtp = async (e) => {
-
     e.preventDefault();
 
     if (!formData.email || !formData.name || !formData.phone) {
       return alert('Please fill in your Name, Email, and WhatsApp number first!');
     }
 
-
     setLoading(true);
     setMessage('');
     setError('');
 
-
     try {
-
       const res = await axios.post(
         `${API_URL}/api/auth/send-otp`,
-        {
-          email: formData.email
-        }
+        { email: formData.email.trim().toLowerCase() }
       );
-
 
       setMessage(res.data.message);
       setOtpSent(true);
-
-
     } catch (err) {
-
       setError(
         err.response?.data?.message ||
+        err.response?.data?.error ||
         'Failed to send OTP.'
       );
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
-
-
   const handleFinalSignup = async (e) => {
-
     e.preventDefault();
+
+    if (!formData.password || formData.password.length < 4) {
+      return alert('Please choose a valid password (minimum 4 characters).');
+    }
+    if (!formData.otp || formData.otp.length !== 6) {
+      return alert('Please enter the complete 6-digit verification code.');
+    }
 
     setLoading(true);
     setMessage('');
     setError('');
 
+    // Explicit payload structural map to guarantee safe state transfer
+    const registrationPayload = {
+      name: formData.name.trim(),
+      email: formData.email.trim().toLowerCase(),
+      password: formData.password,
+      phone: formData.phone.trim(),
+      otp: formData.otp.trim()
+    };
 
     try {
-
       const res = await axios.post(
         `${API_URL}/api/auth/signup`,
-        formData
+        registrationPayload
       );
 
-
       setMessage(res.data.message);
-
 
       setFormData({
         name: '',
@@ -100,26 +93,23 @@ function Signup({ switchToLogin }) {
         otp: ''
       });
 
-
       setOtpSent(false);
 
+      // Auto redirect context back to the login screen panel after 2 seconds
+      setTimeout(() => {
+        switchToLogin();
+      }, 2000);
 
     } catch (err) {
-
       setError(
         err.response?.data?.message ||
-        'Incorrect verification OTP.'
+        err.response?.data?.error ||
+        'Registration verification failed.'
       );
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
-
-
 
   return (
     <div
@@ -133,7 +123,6 @@ function Signup({ switchToLogin }) {
         fontFamily: 'sans-serif'
       }}
     >
-
       <h2
         style={{
           textAlign: 'center',
@@ -144,15 +133,9 @@ function Signup({ switchToLogin }) {
         Register for CampuSwap
       </h2>
 
-
-
       <form onSubmit={otpSent ? handleFinalSignup : handleRequestOtp}>
-
-
-        <div style={{marginBottom:'15px'}}>
-
-          <label>Full Name</label>
-
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Full Name</label>
           <input
             type="text"
             name="name"
@@ -161,20 +144,15 @@ function Signup({ switchToLogin }) {
             required
             disabled={otpSent}
             style={{
-              width:'100%',
-              padding:'10px',
-              boxSizing:'border-box'
+              width: '100%',
+              padding: '10px',
+              boxSizing: 'border-box'
             }}
           />
-
         </div>
 
-
-
-        <div style={{marginBottom:'15px'}}>
-
-          <label>Email ID</label>
-
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Email ID</label>
           <input
             type="email"
             name="email"
@@ -183,19 +161,15 @@ function Signup({ switchToLogin }) {
             required
             disabled={otpSent}
             style={{
-              width:'100%',
-              padding:'10px'
+              width: '100%',
+              padding: '10px',
+              boxSizing: 'border-box'
             }}
           />
-
         </div>
 
-
-
-        <div style={{marginBottom:'15px'}}>
-
-          <label>WhatsApp Number</label>
-
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>WhatsApp Number</label>
           <input
             type="text"
             name="phone"
@@ -205,37 +179,27 @@ function Signup({ switchToLogin }) {
             disabled={otpSent}
             placeholder="Include country code"
             style={{
-              width:'100%',
-              padding:'10px'
+              width: '100%',
+              padding: '10px',
+              boxSizing: 'border-box'
             }}
           />
-
         </div>
 
-
-
-
         {otpSent && (
-
           <>
-
-
             <div
               style={{
-                marginBottom:'15px',
-                backgroundColor:'#e3f2fd',
-                padding:'15px',
-                borderRadius:'6px'
+                marginBottom: '15px',
+                backgroundColor: '#e3f2fd',
+                padding: '15px',
+                borderRadius: '6px'
               }}
             >
-
-              <label>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#1e88e5' }}>
                 Enter 6-Digit Email OTP
               </label>
-
-
               <input
-
                 type="text"
                 name="otp"
                 value={formData.otp}
@@ -243,137 +207,88 @@ function Signup({ switchToLogin }) {
                 required
                 maxLength="6"
                 placeholder="000000"
-
                 style={{
-                  width:'100%',
-                  padding:'10px',
-                  textAlign:'center',
-                  letterSpacing:'4px'
+                  width: '100%',
+                  padding: '10px',
+                  boxSizing: 'border-box',
+                  textAlign: 'center',
+                  letterSpacing: '4px',
+                  fontSize: '18px'
                 }}
-
               />
-
             </div>
 
-
-
-            <div style={{marginBottom:'20px'}}>
-
-              <label>Choose Password</label>
-
-
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Choose Password</label>
               <input
-
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 required
-
                 style={{
-                  width:'100%',
-                  padding:'10px'
+                  width: '100%',
+                  padding: '10px',
+                  boxSizing: 'border-box'
                 }}
-
               />
-
             </div>
-
-
           </>
-
         )}
 
-
-
         <button
-
           type="submit"
-
           disabled={loading}
-
           style={{
-            width:'100%',
-            padding:'12px',
-            backgroundColor: otpSent ? '#28a745':'#007bff',
-            color:'#fff',
-            border:'none',
-            borderRadius:'4px',
-            cursor:'pointer'
+            width: '100%',
+            padding: '12px',
+            backgroundColor: otpSent ? '#28a745' : '#007bff',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold'
           }}
-
         >
-
           {loading
             ? 'Processing...'
             : otpSent
               ? 'Verify & Register'
               : 'Send Verification OTP'
           }
-
         </button>
-
-
       </form>
 
-
-
       {message && (
-        <p style={{
-          color:'green',
-          textAlign:'center'
-        }}>
+        <p style={{ color: 'green', textAlign: 'center', marginTop: '15px', fontWeight: 'bold' }}>
           {message}
         </p>
       )}
 
-
-
       {error && (
-        <p style={{
-          color:'red',
-          textAlign:'center'
-        }}>
+        <p style={{ color: 'red', textAlign: 'center', marginTop: '15px', fontWeight: 'bold' }}>
           {error}
         </p>
       )}
 
-
-
-
       {!otpSent && (
-
-        <p style={{
-          textAlign:'center',
-          marginTop:'20px'
-        }}>
-
+        <p style={{ textAlign: 'center', marginTop: '20px' }}>
           Already have an account?{' '}
-
-
           <span
             onClick={switchToLogin}
             style={{
-              color:'#007bff',
-              cursor:'pointer',
-              textDecoration:'underline'
+              color: '#007bff',
+              cursor: 'pointer',
+              textDecoration: 'underline'
             }}
           >
-
             Login here
-
           </span>
-
-
         </p>
-
       )}
-
-
-
     </div>
   );
 }
-
 
 export default Signup;
