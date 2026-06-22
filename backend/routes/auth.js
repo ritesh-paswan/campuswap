@@ -9,7 +9,7 @@ const pool = require('../db');
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
-  secure: true, // true for port 465, false for other ports
+  secure: true, 
   auth: {
     user: process.env.EMAIL_USER, 
     pass: process.env.EMAIL_PASS  
@@ -22,23 +22,19 @@ router.post('/send-otp', async (req, res) => {
   if (!email) return res.status(400).json({ message: 'Email is required' });
 
   try {
-    // Safely destructure rows
     const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     if (rows && rows.length > 0) {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // Generate a 6-digit random code string
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Reset row on duplicate email requests
     await pool.query(`
       INSERT INTO otps (email, otp_code) 
       VALUES (?, ?) 
       ON DUPLICATE KEY UPDATE otp_code = ?
     `, [email, otp, otp]);
 
-    // Send the email layout
     const mailOptions = {
       from: `"CampuSwap Team" <${process.env.EMAIL_USER}>`,
       to: email,
@@ -54,16 +50,17 @@ router.post('/send-otp', async (req, res) => {
   }
 });
 
-// 2. VERIFY & SIGNUP ROUTE
+// 2. VERIFY & SIGNUP ROUTE (UPDATED)
 router.post('/signup', async (req, res) => {
   const name = req.body.name?.trim();
   const email = req.body.email?.trim().toLowerCase();
   const password = req.body.password;
-  const phone = req.body.phone?.trim();
+  const phone = req.body.phone?.trim() || ""; // Safe fallback if frontend leaves it blank
   const otp = req.body.otp?.trim().toString(); 
 
-  if (!name || !email || !password || !phone || !otp) {
-    return res.status(400).json({ message: 'All registration parameters are required.' });
+  // Make phone optional so missing fields don't instantly block registration
+  if (!name || !email || !password || !otp) {
+    return res.status(400).json({ message: 'Name, email, password, and OTP are required.' });
   }
 
   try {
@@ -75,21 +72,16 @@ router.post('/signup', async (req, res) => {
 
     const latestRecord = records[0];
 
-    console.log("-----------------------------------------");
-    console.log(`💬 Frontend sent OTP: "${otp}"`);
-    console.log(`🗄️ TiDB Cloud stored OTP: "${latestRecord.otp_code}"`);
-    console.log("-----------------------------------------");
-
     if (latestRecord.otp_code.toString().trim() !== otp) {
       return res.status(400).json({ message: 'Incorrect OTP code.' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Fallback block configuration to add user data smoothly
+    // Clean, standard SQL structure inserting only into 'password' and 'phone'
     await pool.query(
-      'INSERT INTO users (name, email, password, password_hash, phone) VALUES (?, ?, ?, ?, ?)', 
-      [name, email, hashedPassword, hashedPassword, phone]
+      'INSERT INTO users (name, email, password, phone) VALUES (?, ?, ?, ?)', 
+      [name, email, hashedPassword, phone]
     );
 
     // Clear out used code
