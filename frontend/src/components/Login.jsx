@@ -82,7 +82,7 @@ function Login({ switchToSignup, onLoginSuccess }) {
         textAlign:'center',
         color:'#333'
       }}>
-        Login to CampusWap
+        Login to CampuSwap
       </h2>
 
 
