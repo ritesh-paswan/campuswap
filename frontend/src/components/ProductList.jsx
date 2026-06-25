@@ -193,7 +193,7 @@ function ProductList({ products = [], loading, onProductClick, onProductDeleted 
                   ₹{product.price}
                 </span>
 
-                {currentUserId === product.user_id ? (
+                {currentUserId === product.seller_id ? (
                   <button
                     onClick={e => handleDelete(e, product.id)}
                     style={{
