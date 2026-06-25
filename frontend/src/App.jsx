@@ -27,9 +27,10 @@ function App() {
     setProductsLoading(true);
     try {
       const response = await axios.get(`${API_URL}/api/products`);
-      setProducts(response.data.products); // fixed: backend wraps array in { products: [] }
+      setProducts(response.data.products || []); // safe fallback prevents crash
     } catch (err) {
       console.error('Error fetching marketplace items:', err);
+      setProducts([]); // prevent undefined on network error
     } finally {
       setProductsLoading(false);
     }

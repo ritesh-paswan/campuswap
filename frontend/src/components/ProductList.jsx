@@ -13,7 +13,7 @@ const CATEGORIES = [
   'Other'
 ];
 
-function ProductList({ products, loading, onProductClick, onProductDeleted }) {
+function ProductList({ products = [], loading, onProductClick, onProductDeleted }) {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -37,7 +37,7 @@ function ProductList({ products, loading, onProductClick, onProductDeleted }) {
         `${API_URL}/api/products/${productId}`,
         {
           headers: {
-            'Authorization': `Bearer ${token}`  // fixed: backend requires this
+            'Authorization': `Bearer ${token}`
           }
         }
       );
@@ -152,7 +152,7 @@ function ProductList({ products, loading, onProductClick, onProductDeleted }) {
 
               {product.image_url && (
                 <img
-                  src={product.image_url}      // fixed: already a full Cloudinary URL
+                  src={product.image_url}
                   alt={product.title}
                   style={{
                     width: '100%',
@@ -193,7 +193,7 @@ function ProductList({ products, loading, onProductClick, onProductDeleted }) {
                   ₹{product.price}
                 </span>
 
-                {currentUserId === product.user_id ? (   // fixed: backend returns user_id not seller_id
+                {currentUserId === product.user_id ? (
                   <button
                     onClick={e => handleDelete(e, product.id)}
                     style={{
