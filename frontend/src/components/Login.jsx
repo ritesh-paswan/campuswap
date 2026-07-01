@@ -1,194 +1,81 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
+const API_URL = "https://campuswap.onrender.com";
+
 function Login({ switchToSignup, onLoginSuccess }) {
-
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const API_URL = "https://campuswap.onrender.com";
-
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
-
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
-
-      const response = await axios.post(
-        `${API_URL}/api/auth/login`,
-        formData
-      );
-
-
-      localStorage.setItem(
-        'token',
-        response.data.token
-      );
-
-      localStorage.setItem(
-        'user',
-        JSON.stringify(response.data.user)
-      );
-
-
+      const response = await axios.post(`${API_URL}/api/auth/login`, formData);
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
       onLoginSuccess(response.data.user);
-
-
     } catch (err) {
-
-      setError(
-        err.response?.data?.message ||
-        'Login failed. Check your credentials.'
-      );
-
+      setError(err.response?.data?.message || 'Login failed. Check your credentials.');
     } finally {
-
       setLoading(false);
-
     }
   };
 
-
   return (
-    <div style={{
-      maxWidth: '400px',
-      margin: '50px auto',
-      padding: '30px',
-      border: '1px solid #ddd',
-      borderRadius: '8px',
-      backgroundColor: '#fff',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-      fontFamily: 'sans-serif'
-    }}>
+    <div className="cs-auth-page">
+      <div className="cs-auth-box">
+        <div className="cs-auth-logo">⚡</div>
+        <h2 className="cs-auth-title">Welcome back</h2>
+        <p className="cs-auth-sub">Sign in to your CampuSwap account</p>
 
+        <form onSubmit={handleSubmit}>
+          <div className="cs-field">
+            <label className="cs-label">Email</label>
+            <input
+              className="cs-input"
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="you@college.edu"
+              required
+              disabled={loading}
+            />
+          </div>
+          <div className="cs-field">
+            <label className="cs-label">Password</label>
+            <input
+              className="cs-input"
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="••••••••"
+              required
+              disabled={loading}
+            />
+          </div>
+          <button className="cs-btn-primary" type="submit" disabled={loading}>
+            {loading ? 'Signing in...' : 'Sign in →'}
+          </button>
+        </form>
 
-      <h2 style={{
-        textAlign:'center',
-        color:'#333'
-      }}>
-        Login to CampuSwap
-      </h2>
+        {error && <div className="cs-error">{error}</div>}
 
-
-      <form onSubmit={handleSubmit}>
-
-
-        <div style={{marginBottom:'15px'}}>
-
-          <label>Email ID</label>
-
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            disabled={loading}
-            style={{
-              width:'100%',
-              padding:'10px',
-              boxSizing:'border-box'
-            }}
-          />
-
-        </div>
-
-
-
-        <div style={{marginBottom:'20px'}}>
-
-          <label>Password</label>
-
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            disabled={loading}
-            style={{
-              width:'100%',
-              padding:'10px',
-              boxSizing:'border-box'
-            }}
-          />
-
-        </div>
-
-
-
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width:'100%',
-            padding:'12px',
-            backgroundColor: loading ? '#ccc':'#007bff',
-            color:'#fff',
-            border:'none',
-            borderRadius:'4px',
-            cursor:'pointer'
-          }}
-        >
-
-          {loading ? 'Logging in securely...' : 'Login'}
-
-        </button>
-
-
-      </form>
-
-
-      {error && (
-        <p style={{
-          color:'red',
-          textAlign:'center'
-        }}>
-          {error}
+        <p className="cs-switch">
+          No account?{' '}
+          <span className="cs-switch-link" onClick={switchToSignup}>
+            Create one free
+          </span>
         </p>
-      )}
-
-
-      <p style={{
-        textAlign:'center',
-        marginTop:'20px'
-      }}>
-
-        Don't have an account?{' '}
-
-        <span
-          onClick={switchToSignup}
-          style={{
-            color:'#28a745',
-            cursor:'pointer',
-            textDecoration:'underline'
-          }}
-        >
-          Register here
-        </span>
-
-      </p>
-
-
+      </div>
     </div>
   );
 }
-
 
 export default Login;

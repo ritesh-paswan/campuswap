@@ -1,183 +1,47 @@
 import React from 'react';
 
 function ProductDetail({ product, onBack }) {
-
   const handleWhatsAppConnect = () => {
-
     const sellerPhoneNumber = product.seller_phone;
     const sellerName = product.seller_name || 'Seller';
-
     if (!sellerPhoneNumber) {
-      alert("This seller did not provide a WhatsApp number during registration.");
+      alert("This seller didn't provide a WhatsApp number.");
       return;
     }
-
-    const messageText = `Hello ${sellerName}! I saw your listing for "${product.title}" on CampuSwap for ₹${product.price}. Is it still available for pickup?`;
-    const encodedMessage = encodeURIComponent(messageText);
-    const whatsappUrl = `https://wa.me/${sellerPhoneNumber}?text=${encodedMessage}`;
-
-    window.open(whatsappUrl, '_blank');
+    const messageText = `Hello ${sellerName}! I saw your listing for "${product.title}" on CampuSwap for ₹${product.price}. Is it still available?`;
+    window.open(`https://wa.me/${sellerPhoneNumber}?text=${encodeURIComponent(messageText)}`, '_blank');
   };
 
   return (
-    <div
-      style={{
-        backgroundColor: '#fff',
-        padding: '30px',
-        borderRadius: '8px',
-        border: '1px solid #ddd',
-        fontFamily: 'sans-serif'
-      }}
-    >
-
-      <button
-        onClick={onBack}
-        style={{
-          marginBottom: '20px',
-          padding: '8px 15px',
-          backgroundColor: '#6c757d',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer'
-        }}
-      >
+    <div>
+      <button className="cs-btn-back" onClick={onBack}>
         ← Back to Marketplace
       </button>
 
-      <div
-        style={{
-          display: 'flex',
-          gap: '30px',
-          flexWrap: 'wrap'
-        }}
-      >
-
+      <div className="cs-detail-layout">
         {product.image_url && (
-          <div style={{ flex: '1', minWidth: '300px' }}>
-            <img
-              src={product.image_url}
-              alt={product.title}
-              style={{
-                width: '100%',
-                maxHeight: '400px',
-                objectFit: 'contain',
-                borderRadius: '8px',
-                border: '1px solid #eee'
-              }}
-            />
+          <div className="cs-detail-img-wrap">
+            <img className="cs-detail-img" src={product.image_url} alt={product.title} />
           </div>
         )}
 
-        <div
-          style={{
-            flex: '1',
-            minWidth: '300px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}
-        >
+        <div className="cs-detail-info">
+          <div className="cs-detail-cat">{product.category || 'Other'}</div>
+          <h2 className="cs-detail-title">{product.title}</h2>
+          <div className="cs-detail-price">₹{product.price}</div>
 
-          <div>
+          <div className="cs-detail-desc-label">About this item</div>
+          <div className="cs-detail-desc">{product.description}</div>
 
-            <span
-              style={{
-                color: '#007bff',
-                fontWeight: 'bold',
-                textTransform: 'uppercase',
-                fontSize: '0.85rem'
-              }}
-            >
-              {product.category || 'Other'}
-            </span>
-
-            <h2
-              style={{
-                color: '#333',
-                margin: '5px 0 10px 0',
-                fontSize: '2rem'
-              }}
-            >
-              {product.title}
-            </h2>
-
-            <p
-              style={{
-                fontSize: '1.5rem',
-                fontWeight: 'bold',
-                color: '#28a745',
-                margin: '0 0 20px 0'
-              }}
-            >
-              ₹{product.price}
-            </p>
-
-            <h4 style={{ margin: '0 0 5px 0', color: '#666' }}>
-              Product Description:
-            </h4>
-
-            <p
-              style={{
-                color: '#555',
-                lineHeight: '1.6',
-                fontSize: '1.05rem',
-                marginTop: '0',
-                backgroundColor: '#f8f9fa',
-                padding: '15px',
-                borderRadius: '6px'
-              }}
-            >
-              {product.description}
-            </p>
-
+          <div className="cs-detail-seller">
+            Listed by <strong>{product.seller_name || `User #${product.seller_id}`}</strong>
           </div>
 
-          <div
-            style={{
-              marginTop: '20px',
-              borderTop: '1px solid #eee',
-              paddingTop: '20px'
-            }}
-          >
-
-            <p
-              style={{
-                color: '#777',
-                fontSize: '0.9rem',
-                marginBottom: '15px'
-              }}
-            >
-              Listed by: <strong>{product.seller_name || `User #${product.seller_id}`}</strong>
-            </p>
-
-            <button
-              onClick={handleWhatsAppConnect}
-              style={{
-                width: '100%',
-                padding: '15px',
-                backgroundColor: '#25D366',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '1.2rem',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '10px'
-              }}
-            >
-              <span>Chat on WhatsApp 💬</span>
-            </button>
-
-          </div>
-
+          <button className="cs-btn-whatsapp" onClick={handleWhatsAppConnect}>
+            <span>💬</span> Chat on WhatsApp
+          </button>
         </div>
-
       </div>
-
     </div>
   );
 }
