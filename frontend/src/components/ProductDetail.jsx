@@ -1,7 +1,11 @@
 import React from 'react';
 
-function ProductDetail({ product, onBack }) {
+function ProductDetail({ product, onBack, onLoginRequired, isLoggedIn }) {
   const handleWhatsAppConnect = () => {
+    if (!isLoggedIn) {
+      onLoginRequired();
+      return;
+    }
     const sellerPhoneNumber = product.seller_phone;
     const sellerName = product.seller_name || 'Seller';
     if (!sellerPhoneNumber) {
@@ -38,7 +42,8 @@ function ProductDetail({ product, onBack }) {
           </div>
 
           <button className="cs-btn-whatsapp" onClick={handleWhatsAppConnect}>
-            <span>💬</span> Chat on WhatsApp
+            <span>💬</span>
+            {isLoggedIn ? 'Chat on WhatsApp' : 'Sign in to contact seller'}
           </button>
         </div>
       </div>
