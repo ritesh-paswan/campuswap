@@ -640,7 +640,7 @@ const styles = `
   /* TIME AGO */
   .cs-product-time {
     font-size: 0.7rem;
-    color: #334155;
+    color:  #bfc2c6;
     font-weight: 500;
   }
 
