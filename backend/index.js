@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const pool = require('./db');
 
 const app = express();
-const server = http.createServer(app); // wrap express in http server for socket.io
+const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
@@ -26,15 +26,12 @@ app.use(cors({
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
-// Link authentication endpoints
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
-// Link product endpoints
 const productRoutes = require('./routes/products');
 app.use('/api/products', productRoutes);
 
-// Link chat endpoints
 const chatRoutes = require('./routes/chat');
 app.use('/api/chat', chatRoutes);
 
@@ -45,13 +42,12 @@ app.get('/', (req, res) => {
 // ─────────────────────────────────────────────
 // Socket.io — Real-time chat
 // ─────────────────────────────────────────────
-// Authenticate socket connection using JWT
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('Authentication required'));
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    socket.user = decoded; // { id: user.id }
+    socket.user = decoded;
     next();
   } catch (err) {
     next(new Error('Invalid token'));
@@ -69,14 +65,11 @@ io.on('connection', (socket) => {
   // Send a message
   socket.on('send_message', async ({ conversationId, content }) => {
     if (!content?.trim()) return;
-
     try {
-      // Save to DB
       const [result] = await pool.query(
         `INSERT INTO messages (conversation_id, sender_id, content) VALUES (?, ?, ?)`,
         [conversationId, socket.user.id, content.trim()]
       );
-
       const [rows] = await pool.query(
         `SELECT m.*, u.name AS sender_name 
          FROM messages m 
@@ -84,12 +77,28 @@ io.on('connection', (socket) => {
          WHERE m.id = ?`,
         [result.insertId]
       );
-
-      // Broadcast to everyone in the conversation room
       io.to(`conversation_${conversationId}`).emit('new_message', rows[0]);
     } catch (err) {
       console.error('🚨 Message save error:', err);
       socket.emit('error', { message: 'Failed to send message' });
+    }
+  });
+
+  // Mark messages as seen
+  socket.on('mark_seen', async ({ conversationId }) => {
+    try {
+      await pool.query(
+        `UPDATE messages SET is_read = 1 
+         WHERE conversation_id = ? AND sender_id != ?`,
+        [conversationId, socket.user.id]
+      );
+      // Notify the other user their messages were seen
+      io.to(`conversation_${conversationId}`).emit('messages_seen', {
+        conversationId,
+        seenBy: socket.user.id
+      });
+    } catch (err) {
+      console.error('🚨 Mark seen error:', err);
     }
   });
 
@@ -98,7 +107,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Make io accessible to routes
 app.set('io', io);
 
 async function verifyDatabaseConnection() {
@@ -112,7 +120,6 @@ async function verifyDatabaseConnection() {
 
 verifyDatabaseConnection();
 
-// Use server.listen instead of app.listen for socket.io
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
