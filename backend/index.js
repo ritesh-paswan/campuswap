@@ -1,17 +1,29 @@
-require('dotenv').config(); // Loads standard environment variables smoothly
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const pool = require('./db'); 
+const http = require('http');
+const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
+const pool = require('./db');
 
 const app = express();
+const server = http.createServer(app); // wrap express in http server for socket.io
+
+const io = new Server(server, {
+  cors: {
+    origin: ["http://localhost:5173", "https://campuswap.vercel.app"],
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-    origin: ["http://localhost:5173", "https://campuswap.vercel.app"], 
-    credentials: true
+  origin: ["http://localhost:5173", "https://campuswap.vercel.app"],
+  credentials: true
 }));
 app.use(express.json());
-
 app.use('/uploads', express.static('uploads'));
 
 // Link authentication endpoints
@@ -22,11 +34,73 @@ app.use('/api/auth', authRoutes);
 const productRoutes = require('./routes/products');
 app.use('/api/products', productRoutes);
 
+// Link chat endpoints
+const chatRoutes = require('./routes/chat');
+app.use('/api/chat', chatRoutes);
+
 app.get('/', (req, res) => {
-    res.json({ status: "Backend Server is running smoothly" });
+  res.json({ status: "Backend Server is running smoothly" });
 });
 
-// Clean connection check without trying to alter existing tables
+// ─────────────────────────────────────────────
+// Socket.io — Real-time chat
+// ─────────────────────────────────────────────
+// Authenticate socket connection using JWT
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) return next(new Error('Authentication required'));
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.user = decoded; // { id: user.id }
+    next();
+  } catch (err) {
+    next(new Error('Invalid token'));
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log(`🔌 User ${socket.user.id} connected`);
+
+  // Join a conversation room
+  socket.on('join_conversation', (conversationId) => {
+    socket.join(`conversation_${conversationId}`);
+  });
+
+  // Send a message
+  socket.on('send_message', async ({ conversationId, content }) => {
+    if (!content?.trim()) return;
+
+    try {
+      // Save to DB
+      const [result] = await pool.query(
+        `INSERT INTO messages (conversation_id, sender_id, content) VALUES (?, ?, ?)`,
+        [conversationId, socket.user.id, content.trim()]
+      );
+
+      const [rows] = await pool.query(
+        `SELECT m.*, u.name AS sender_name 
+         FROM messages m 
+         JOIN users u ON m.sender_id = u.id 
+         WHERE m.id = ?`,
+        [result.insertId]
+      );
+
+      // Broadcast to everyone in the conversation room
+      io.to(`conversation_${conversationId}`).emit('new_message', rows[0]);
+    } catch (err) {
+      console.error('🚨 Message save error:', err);
+      socket.emit('error', { message: 'Failed to send message' });
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`🔌 User ${socket.user.id} disconnected`);
+  });
+});
+
+// Make io accessible to routes
+app.set('io', io);
+
 async function verifyDatabaseConnection() {
   try {
     await pool.query('SELECT 1');
@@ -38,6 +112,7 @@ async function verifyDatabaseConnection() {
 
 verifyDatabaseConnection();
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// Use server.listen instead of app.listen for socket.io
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
