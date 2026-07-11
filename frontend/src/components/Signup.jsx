@@ -14,8 +14,9 @@ function Signup({ switchToLogin }) {
 
   const handleRequestOtp = async (e) => {
     e.preventDefault();
-    if (!formData.email || !formData.name || !formData.phone)
-      return alert('Please fill in Name, Email, and WhatsApp number first.');
+    // ✅ Phone is now optional
+    if (!formData.email || !formData.name)
+      return alert('Please fill in your Name and Email first.');
     setLoading(true); setMessage(''); setError('');
     try {
       const res = await axios.post(`${API_URL}/api/auth/send-otp`, { email: formData.email.trim().toLowerCase() });
@@ -77,9 +78,12 @@ function Signup({ switchToLogin }) {
                   onChange={handleChange} placeholder="you@college.edu" required />
               </div>
               <div className="cs-field">
-                <label className="cs-label">WhatsApp Number</label>
+                {/* ✅ Phone is optional — no required attribute */}
+                <label className="cs-label">
+                  WhatsApp Number <span style={{ color: '#475569', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+                </label>
                 <input className="cs-input" type="text" name="phone" value={formData.phone}
-                  onChange={handleChange} placeholder="+91 XXXXX XXXXX" required />
+                  onChange={handleChange} placeholder="+91 XXXXX XXXXX" />
               </div>
             </>
           )}

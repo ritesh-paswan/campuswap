@@ -6,8 +6,7 @@ const API_URL = "https://campuswap.onrender.com";
 
 function formatTime(dateString) {
   if (!dateString) return '';
-  const date = new Date(dateString);
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 function formatDateDivider(dateString) {
@@ -23,12 +22,10 @@ function formatDateDivider(dateString) {
 
 function shouldShowDivider(messages, index) {
   if (index === 0) return true;
-  const curr = new Date(messages[index].created_at).toDateString();
-  const prev = new Date(messages[index - 1].created_at).toDateString();
-  return curr !== prev;
+  return new Date(messages[index].created_at).toDateString() !==
+         new Date(messages[index - 1].created_at).toDateString();
 }
 
-// Group consecutive messages from same sender
 function shouldShowAvatar(messages, index) {
   if (index === messages.length - 1) return true;
   return messages[index].sender_id !== messages[index + 1].sender_id;
@@ -39,17 +36,14 @@ function shouldShowTime(messages, index) {
   const curr = messages[index];
   const next = messages[index + 1];
   if (curr.sender_id !== next.sender_id) return true;
-  // Show time if gap > 5 minutes
-  const gap = new Date(next.created_at) - new Date(curr.created_at);
-  return gap > 5 * 60 * 1000;
+  return (new Date(next.created_at) - new Date(curr.created_at)) > 5 * 60 * 1000;
 }
 
 function ChatWindow({ conversation, user, onBack, onMessageRead }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
-  const [socket, setSocket] = useState(null);
-  const [seenMessageId, setSeenMessageId] = useState(null); // last msg seen by other user
+  const [seenMessageId, setSeenMessageId] = useState(null);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
 
@@ -60,8 +54,13 @@ function ChatWindow({ conversation, user, onBack, onMessageRead }) {
   useEffect(() => {
     fetchMessages();
     setupSocket();
+
+    // ✅ Bug 1 fixed: use socketRef.current not stale socket state
     return () => {
-      if (socketRef.current) socketRef.current.disconnect();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
     };
   }, [conversation.id]);
 
@@ -75,11 +74,13 @@ function ChatWindow({ conversation, user, onBack, onMessageRead }) {
       const res = await axios.get(`${API_URL}/api/chat/messages/${conversation.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMessages(res.data.messages || []);
+      const msgs = res.data.messages || [];
+      setMessages(msgs);
+
       // Find last seen message by other user
-      const myMessages = (res.data.messages || []).filter(m => m.sender_id === user.id && m.is_read === 1);
-      if (myMessages.length > 0) {
-        setSeenMessageId(myMessages[myMessages.length - 1].id);
+      const mySeenMsgs = msgs.filter(m => m.sender_id === user.id && m.is_read === 1);
+      if (mySeenMsgs.length > 0) {
+        setSeenMessageId(mySeenMsgs[mySeenMsgs.length - 1].id);
       }
       onMessageRead();
     } catch (err) {
@@ -90,50 +91,58 @@ function ChatWindow({ conversation, user, onBack, onMessageRead }) {
   };
 
   const setupSocket = () => {
+    // ✅ Disconnect any existing socket before creating new one
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+
     const token = localStorage.getItem('token');
     const newSocket = io(API_URL, {
       auth: { token },
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
     newSocket.on('connect', () => {
       newSocket.emit('join_conversation', conversation.id);
-      // Notify other user that we've seen the messages
       newSocket.emit('mark_seen', { conversationId: conversation.id });
     });
 
     newSocket.on('new_message', (message) => {
       setMessages(prev => {
-        const exists = prev.find(m => m.id === message.id);
-        if (exists) return prev;
-        // Auto-mark as seen since chat is open
+        if (prev.find(m => m.id === message.id)) return prev;
         newSocket.emit('mark_seen', { conversationId: conversation.id });
         return [...prev, message];
       });
       onMessageRead();
     });
 
-    // Other user has seen our messages
     newSocket.on('messages_seen', ({ conversationId, seenBy }) => {
       if (conversationId === conversation.id && seenBy !== user.id) {
         setMessages(prev => {
           const myMsgs = prev.filter(m => m.sender_id === user.id);
-          if (myMsgs.length > 0) {
-            setSeenMessageId(myMsgs[myMsgs.length - 1].id);
-          }
+          if (myMsgs.length > 0) setSeenMessageId(myMsgs[myMsgs.length - 1].id);
           return prev;
         });
       }
     });
 
-    newSocket.on('error', (err) => console.error('Socket error:', err));
+    newSocket.on('connect_error', (err) => {
+      console.error('Socket connect error:', err.message);
+    });
+
+    newSocket.on('error', (err) => {
+      console.error('Socket error:', err);
+    });
 
     socketRef.current = newSocket;
-    setSocket(newSocket);
   };
 
   const handleSend = () => {
-    if (!input.trim() || !socketRef.current) return;
+    if (!input.trim() || !socketRef.current?.connected) return;
     socketRef.current.emit('send_message', {
       conversationId: conversation.id,
       content: input.trim()
@@ -153,8 +162,8 @@ function ChatWindow({ conversation, user, onBack, onMessageRead }) {
     ? (conversation.seller_name || 'Seller')
     : (conversation.buyer_name || 'Buyer');
 
-  // Get initials for avatar
-  const getInitials = (name) => name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
+  const getInitials = (name) =>
+    name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
 
   return (
     <div className="cs-chat-wrap">
@@ -195,12 +204,10 @@ function ChatWindow({ conversation, user, onBack, onMessageRead }) {
             const showDivider = shouldShowDivider(messages, index);
             const showTime = shouldShowTime(messages, index);
             const showAvatar = !isMine && shouldShowAvatar(messages, index);
-            const isLastMine = isMine && index === messages.filter((_, i) => i <= index && messages[i].sender_id === user.id).length - 1;
             const isSeen = msg.id === seenMessageId;
 
             return (
               <React.Fragment key={msg.id}>
-                {/* Date divider */}
                 {showDivider && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '16px 0 8px' }}>
                     <div style={{ flex: 1, height: '1px', background: 'rgba(99,179,237,0.08)' }} />
@@ -211,7 +218,6 @@ function ChatWindow({ conversation, user, onBack, onMessageRead }) {
                   </div>
                 )}
 
-                {/* Message row */}
                 <div style={{
                   display: 'flex',
                   flexDirection: isMine ? 'row-reverse' : 'row',
@@ -219,58 +225,43 @@ function ChatWindow({ conversation, user, onBack, onMessageRead }) {
                   gap: '8px',
                   marginBottom: showTime ? '4px' : '2px',
                 }}>
-                  {/* Other user avatar */}
                   {!isMine && (
                     <div style={{
                       width: '28px', height: '28px', borderRadius: '50%',
                       background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '0.65rem', fontWeight: 700, color: '#fff',
-                      flexShrink: 0,
-                      opacity: showAvatar ? 1 : 0,
+                      flexShrink: 0, opacity: showAvatar ? 1 : 0,
                     }}>
                       {getInitials(otherName)}
                     </div>
                   )}
 
-                  {/* Bubble */}
                   <div style={{
-                    maxWidth: '65%',
-                    padding: '10px 14px',
+                    maxWidth: '65%', padding: '10px 14px',
                     borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                    background: isMine
-                      ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)'
-                      : '#0f1623',
+                    background: isMine ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : '#0f1623',
                     border: isMine ? 'none' : '1px solid rgba(99,179,237,0.1)',
                     color: isMine ? '#fff' : '#e2e8f0',
-                    fontSize: '0.9rem',
-                    lineHeight: '1.5',
-                    wordBreak: 'break-word',
+                    fontSize: '0.9rem', lineHeight: '1.5', wordBreak: 'break-word',
                   }}>
                     {msg.content}
                   </div>
                 </div>
 
-                {/* Time + seen receipt */}
                 {showTime && (
                   <div style={{
                     display: 'flex',
                     justifyContent: isMine ? 'flex-end' : 'flex-start',
                     paddingLeft: isMine ? 0 : '36px',
                     paddingRight: isMine ? '4px' : 0,
-                    marginBottom: '8px',
-                    gap: '4px',
-                    alignItems: 'center',
+                    marginBottom: '8px', gap: '4px', alignItems: 'center',
                   }}>
                     <span style={{ fontSize: '0.68rem', color: '#334155' }}>
                       {formatTime(msg.created_at)}
                     </span>
                     {isMine && (
-                      <span style={{
-                        fontSize: '0.68rem',
-                        color: isSeen ? '#63b3ed' : '#475569',
-                        fontWeight: 600,
-                      }}>
+                      <span style={{ fontSize: '0.68rem', color: isSeen ? '#63b3ed' : '#475569', fontWeight: 600 }}>
                         {isSeen ? '✓✓' : '✓'}
                       </span>
                     )}
@@ -294,11 +285,7 @@ function ChatWindow({ conversation, user, onBack, onMessageRead }) {
           onKeyDown={handleKeyDown}
           autoComplete="off"
         />
-        <button
-          className="cs-btn-send"
-          onClick={handleSend}
-          disabled={!input.trim()}
-        >
+        <button className="cs-btn-send" onClick={handleSend} disabled={!input.trim()}>
           ↗
         </button>
       </div>

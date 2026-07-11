@@ -22,7 +22,6 @@ function authenticateToken(req, res, next) {
 
 // ─────────────────────────────────────────────
 // 1. POST /api/products/upload
-// Accepts up to 3 images: image_1 (required), image_2, image_3 (optional)
 // ─────────────────────────────────────────────
 router.post('/upload', authenticateToken, upload.fields([
   { name: 'image_1', maxCount: 1 },
@@ -39,7 +38,6 @@ router.post('/upload', authenticateToken, upload.fields([
     const { title, description, price, category } = req.body;
 
     if (!title || !price) {
-      // Clean up uploaded files on validation failure
       for (const key of ['image_1', 'image_2', 'image_3']) {
         if (files[key]?.[0]?.filename) {
           await cloudinary.uploader.destroy(files[key][0].filename).catch(() => {});
@@ -50,7 +48,6 @@ router.post('/upload', authenticateToken, upload.fields([
 
     const primaryImageUrl = files.image_1[0].path;
 
-    // Insert main product with primary image
     const [result] = await pool.query(
       `INSERT INTO products (seller_id, title, description, price, category, image_url)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -66,7 +63,6 @@ router.post('/upload', authenticateToken, upload.fields([
 
     const productId = result.insertId;
 
-    // Insert all images into product_images table (including primary at position 0)
     const imageEntries = [];
     for (const [index, key] of ['image_1', 'image_2', 'image_3'].entries()) {
       if (files[key]?.[0]) {
@@ -87,8 +83,8 @@ router.post('/upload', authenticateToken, upload.fields([
     });
 
   } catch (error) {
-    console.error('🚨 Product Upload Error:', error);
-    return res.status(500).json({ message: 'Failed to list product.', error: error.message });
+    console.error('🚨 Product Upload Error:', error.message);
+    return res.status(500).json({ message: 'Failed to list product. Please try again.' });
   }
 });
 
@@ -104,21 +100,24 @@ router.get('/', async (req, res) => {
          u.name AS seller_name, u.phone AS seller_phone
        FROM products p
        LEFT JOIN users u ON p.seller_id = u.id
-       ORDER BY p.id DESC`
+       ORDER BY p.id DESC
+       LIMIT 200`
     );
 
     return res.json({ products });
   } catch (error) {
-    console.error('🚨 Fetch Products Error:', error);
-    return res.status(500).json({ message: 'Failed to fetch products.', error: error.message });
+    console.error('🚨 Fetch Products Error:', error.message);
+    return res.status(500).json({ message: 'Failed to fetch products. Please try again.' });
   }
 });
 
 // ─────────────────────────────────────────────
 // 3. GET /api/products/:id
-// Returns product + all images
 // ─────────────────────────────────────────────
 router.get('/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ message: 'Invalid product ID.' });
+
   try {
     const [rows] = await pool.query(
       `SELECT 
@@ -128,30 +127,28 @@ router.get('/:id', async (req, res) => {
        FROM products p
        LEFT JOIN users u ON p.seller_id = u.id
        WHERE p.id = ?`,
-      [req.params.id]
+      [id]
     );
 
     if (!rows || rows.length === 0) {
       return res.status(404).json({ message: 'Product not found.' });
     }
 
-    // Fetch all images for this product
     const [images] = await pool.query(
       `SELECT image_url, position FROM product_images 
        WHERE product_id = ? ORDER BY position ASC`,
-      [req.params.id]
+      [id]
     );
 
     const product = rows[0];
-    // If product_images has entries use them, otherwise fall back to image_url
     product.images = images.length > 0
       ? images.map(img => img.image_url)
       : (product.image_url ? [product.image_url] : []);
 
     return res.json({ product });
   } catch (error) {
-    console.error('🚨 Fetch Product Error:', error);
-    return res.status(500).json({ message: 'Failed to fetch product.', error: error.message });
+    console.error('🚨 Fetch Product Error:', error.message);
+    return res.status(500).json({ message: 'Failed to fetch product. Please try again.' });
   }
 });
 
@@ -159,23 +156,26 @@ router.get('/:id', async (req, res) => {
 // 4. PATCH /api/products/:id/status
 // ─────────────────────────────────────────────
 router.patch('/:id/status', authenticateToken, async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ message: 'Invalid product ID.' });
+
   try {
     const { status } = req.body;
     if (!['available', 'sold'].includes(status)) {
       return res.status(400).json({ message: 'Status must be available or sold.' });
     }
     const [rows] = await pool.query(
-      'SELECT * FROM products WHERE id = ? AND seller_id = ?',
-      [req.params.id, req.user.id]
+      'SELECT id FROM products WHERE id = ? AND seller_id = ?',
+      [id, req.user.id]
     );
     if (!rows || rows.length === 0) {
       return res.status(404).json({ message: 'Product not found or unauthorized.' });
     }
-    await pool.query('UPDATE products SET status = ? WHERE id = ?', [status, req.params.id]);
+    await pool.query('UPDATE products SET status = ? WHERE id = ?', [status, id]);
     return res.json({ message: `Product marked as ${status}.`, status });
   } catch (error) {
-    console.error('🚨 Status Update Error:', error);
-    return res.status(500).json({ message: 'Failed to update status.', error: error.message });
+    console.error('🚨 Status Update Error:', error.message);
+    return res.status(500).json({ message: 'Failed to update status. Please try again.' });
   }
 });
 
@@ -183,10 +183,13 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
 // 5. DELETE /api/products/:id
 // ─────────────────────────────────────────────
 router.delete('/:id', authenticateToken, async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ message: 'Invalid product ID.' });
+
   try {
     const [rows] = await pool.query(
       'SELECT * FROM products WHERE id = ? AND seller_id = ?',
-      [req.params.id, req.user.id]
+      [id, req.user.id]
     );
     if (!rows || rows.length === 0) {
       return res.status(404).json({ message: 'Product not found or unauthorized.' });
@@ -194,10 +197,9 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     const product = rows[0];
 
-    // Delete all images from Cloudinary
     const [images] = await pool.query(
       'SELECT image_url FROM product_images WHERE product_id = ?',
-      [req.params.id]
+      [id]
     );
 
     const allImageUrls = images.length > 0
@@ -205,21 +207,24 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       : (product.image_url ? [product.image_url] : []);
 
     for (const url of allImageUrls) {
-      const urlParts = url.split('/');
-      const fileWithExt = urlParts[urlParts.length - 1];
-      const folder = urlParts[urlParts.length - 2];
-      const publicId = `${folder}/${fileWithExt.split('.')[0]}`;
-      await cloudinary.uploader.destroy(publicId).catch(() => {});
+      try {
+        const urlParts = url.split('/');
+        const fileWithExt = urlParts[urlParts.length - 1];
+        const folder = urlParts[urlParts.length - 2];
+        const publicId = `${folder}/${fileWithExt.split('.')[0]}`;
+        await cloudinary.uploader.destroy(publicId);
+      } catch (e) {
+        console.warn('⚠️ Cloudinary delete failed for:', url);
+      }
     }
 
-    // Delete image records then product
-    await pool.query('DELETE FROM product_images WHERE product_id = ?', [req.params.id]);
-    await pool.query('DELETE FROM products WHERE id = ?', [req.params.id]);
+    await pool.query('DELETE FROM product_images WHERE product_id = ?', [id]);
+    await pool.query('DELETE FROM products WHERE id = ?', [id]);
 
     return res.json({ message: 'Product deleted successfully.' });
   } catch (error) {
-    console.error('🚨 Delete Product Error:', error);
-    return res.status(500).json({ message: 'Failed to delete product.', error: error.message });
+    console.error('🚨 Delete Product Error:', error.message);
+    return res.status(500).json({ message: 'Failed to delete product. Please try again.' });
   }
 });
 
