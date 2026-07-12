@@ -18,7 +18,7 @@ const otpLimiter = rateLimit({
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 10000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: 'Too many login attempts. Please wait 15 minutes.' }
