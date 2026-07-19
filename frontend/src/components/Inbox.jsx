@@ -17,7 +17,7 @@ function timeAgo(dateString) {
   return `${days}d ago`;
 }
 
-function Inbox({ user, onOpenChat, onBack }) {
+function Inbox({ user, onOpenChat }) {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,54 +39,53 @@ function Inbox({ user, onOpenChat, onBack }) {
     }
   };
 
+  if (loading) return (
+    <div className="cs-loading">
+      <span className="cs-loading-dot"></span>
+      <span className="cs-loading-dot"></span>
+      <span className="cs-loading-dot"></span>
+    </div>
+  );
+
+  if (conversations.length === 0) return (
+    <div className="cs-empty">
+      <div className="cs-empty-icon">📭</div>
+      <div className="cs-empty-text">No conversations yet. Message a seller to get started.</div>
+    </div>
+  );
+
   return (
-    <div>
-      <div className="cs-inbox-header">
-        <h2 className="cs-inbox-title">💬 Inbox</h2>
-      </div>
+    <div className="cs-conv-list">
+      {conversations.map(conv => {
+        const isUnread = conv.unread_count > 0;
+        const otherName = conv.buyer_id === user.id ? conv.seller_name : conv.buyer_name;
+        const role = conv.buyer_id === user.id ? 'Buyer' : 'Seller';
 
-      {loading ? (
-        <div className="cs-loading">
-          <span className="cs-loading-dot"></span>
-          <span className="cs-loading-dot"></span>
-          <span className="cs-loading-dot"></span>
-        </div>
-      ) : conversations.length === 0 ? (
-        <div className="cs-empty">
-          <div className="cs-empty-icon">📭</div>
-          <div className="cs-empty-text">No conversations yet. Message a seller to get started.</div>
-        </div>
-      ) : (
-        <div className="cs-conv-list">
-          {conversations.map(conv => {
-            const isUnread = conv.unread_count > 0;
-            const otherName = conv.buyer_id === user.id ? conv.seller_name : conv.buyer_name;
-            const role = conv.buyer_id === user.id ? 'Buyer' : 'Seller';
-
-            return (
-              <div
-                key={conv.id}
-                className={`cs-conv-card ${isUnread ? 'unread' : ''}`}
-                onClick={() => onOpenChat(conv)}
-              >
-                {conv.product_image
-                  ? <img className="cs-conv-img" src={conv.product_image} alt={conv.product_title} />
-                  : <div className="cs-conv-img-placeholder">📦</div>
-                }
-                <div className="cs-conv-body">
-                  <div className="cs-conv-product">{conv.product_title}</div>
-                  <div className="cs-conv-name">{otherName} <span style={{ color: '#334155', fontWeight: 400, fontSize: '0.75rem' }}>· {role}</span></div>
-                  <div className="cs-conv-last">{conv.last_message || 'No messages yet'}</div>
-                </div>
-                <div className="cs-conv-meta">
-                  <div className="cs-conv-time">{timeAgo(conv.last_message_at || conv.created_at)}</div>
-                  {isUnread && <div className="cs-conv-unread-dot"></div>}
-                </div>
+        return (
+          <div
+            key={conv.id}
+            className={`cs-conv-card ${isUnread ? 'unread' : ''}`}
+            onClick={() => onOpenChat(conv)}
+          >
+            {conv.product_image
+              ? <img className="cs-conv-img" src={conv.product_image} alt={conv.product_title} />
+              : <div className="cs-conv-img-placeholder">📦</div>
+            }
+            <div className="cs-conv-body">
+              <div className="cs-conv-product">{conv.product_title}</div>
+              <div className="cs-conv-name">
+                {otherName}
+                <span style={{ color: '#334155', fontWeight: 400, fontSize: '0.72rem' }}> · {role}</span>
               </div>
-            );
-          })}
-        </div>
-      )}
+              <div className="cs-conv-last">{conv.last_message || 'No messages yet'}</div>
+            </div>
+            <div className="cs-conv-meta">
+              <div className="cs-conv-time">{timeAgo(conv.last_message_at || conv.created_at)}</div>
+              {isUnread && <div className="cs-conv-unread-dot"></div>}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
