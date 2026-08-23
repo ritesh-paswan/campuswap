@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const API_URL = "https://campuswap.onrender.com";
 
-function Login({ switchToSignup, onLoginSuccess }) {
+function Login({ switchToSignup, onLoginSuccess, switchToForgot }) {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -12,8 +12,7 @@ function Login({ switchToSignup, onLoginSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    setError(''); setLoading(true);
     try {
       const response = await axios.post(`${API_URL}/api/auth/login`, formData);
       localStorage.setItem('token', response.data.token);
@@ -37,29 +36,30 @@ function Login({ switchToSignup, onLoginSuccess }) {
           <div className="cs-field">
             <label className="cs-label">Email</label>
             <input
-              className="cs-input"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="you@college.edu"
-              required
-              disabled={loading}
+              className="cs-input" type="email" name="email"
+              value={formData.email} onChange={handleChange}
+              placeholder="you@college.edu" required disabled={loading}
             />
           </div>
           <div className="cs-field">
             <label className="cs-label">Password</label>
             <input
-              className="cs-input"
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-              disabled={loading}
+              className="cs-input" type="password" name="password"
+              value={formData.password} onChange={handleChange}
+              placeholder="••••••••" required disabled={loading}
             />
           </div>
+
+          {/* Forgot password link */}
+          <div style={{ textAlign: 'right', marginTop: '-10px', marginBottom: '18px' }}>
+            <span
+              onClick={switchToForgot}
+              style={{ fontSize: '0.8rem', color: '#63b3ed', cursor: 'pointer', fontWeight: 500 }}
+            >
+              Forgot password?
+            </span>
+          </div>
+
           <button className="cs-btn-primary" type="submit" disabled={loading}>
             {loading ? 'Signing in...' : 'Sign in →'}
           </button>
@@ -69,9 +69,7 @@ function Login({ switchToSignup, onLoginSuccess }) {
 
         <p className="cs-switch">
           No account?{' '}
-          <span className="cs-switch-link" onClick={switchToSignup}>
-            Create one free
-          </span>
+          <span className="cs-switch-link" onClick={switchToSignup}>Create one free</span>
         </p>
       </div>
     </div>
