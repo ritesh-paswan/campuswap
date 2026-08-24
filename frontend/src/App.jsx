@@ -310,13 +310,27 @@ function App() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null); setSelectedProduct(null);
-    setShowForm(false); setActiveConversation(null);
-    setUnreadCount(0); setView(null); setShowPushBanner(false);
-  };
+  const handleLogout = async () => {
+  // Unsubscribe from push on this device
+  const token = localStorage.getItem('token');
+  if (token && 'serviceWorker' in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        await sub.unsubscribe();
+        await axios.delete(`${API_URL}/api/push/unsubscribe`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+    } catch (e) {}
+  }
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  setUser(null); setSelectedProduct(null);
+  setShowForm(false); setActiveConversation(null);
+  setUnreadCount(0); setView(null); setShowPushBanner(false);
+};
 
   const handleLoginSuccess = (loggedUser) => {
     setUser(loggedUser);
