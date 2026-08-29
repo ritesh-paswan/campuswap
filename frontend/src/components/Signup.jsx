@@ -14,53 +14,33 @@ function Signup({ switchToLogin, onLoginSuccess }) {
 
   const handleRequestOtp = async (e) => {
     e.preventDefault();
-    if (!formData.email || !formData.name)
-      return alert('Please fill in your Name and Email first.');
+    if (!formData.email || !formData.name) return alert('Fill in your Name and Email first.');
     setLoading(true); setMessage(''); setError('');
     try {
-      const res = await axios.post(`${API_URL}/api/auth/send-otp`, {
-        email: formData.email.trim().toLowerCase()
-      });
-      setMessage(res.data.message);
-      setOtpSent(true);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send OTP.');
-    } finally {
-      setLoading(false);
-    }
+      const res = await axios.post(`${API_URL}/api/auth/send-otp`, { email: formData.email.trim().toLowerCase() });
+      setMessage(res.data.message); setOtpSent(true);
+    } catch (err) { setError(err.response?.data?.message || 'Failed to send OTP.'); }
+    finally { setLoading(false); }
   };
 
   const handleFinalSignup = async (e) => {
     e.preventDefault();
-    if (!formData.password || formData.password.length < 4)
-      return alert('Password must be at least 4 characters.');
-    if (!formData.otp || formData.otp.length !== 6)
-      return alert('Enter the complete 6-digit code.');
+    if (formData.password.length < 4) return alert('Password must be at least 4 characters.');
+    if (formData.otp.length !== 6) return alert('Enter the complete 6-digit code.');
     setLoading(true); setMessage(''); setError('');
     try {
       const res = await axios.post(`${API_URL}/api/auth/signup`, {
-        name: formData.name.trim(),
-        email: formData.email.trim().toLowerCase(),
-        password: formData.password,
-        phone: formData.phone.trim(),
-        otp: formData.otp.trim()
+        name: formData.name.trim(), email: formData.email.trim().toLowerCase(),
+        password: formData.password, phone: formData.phone.trim(), otp: formData.otp.trim()
       });
-
       setMessage(res.data.message);
-
-      // ✅ Auto login — save token and redirect immediately
       if (res.data.token && res.data.user) {
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('user', JSON.stringify(res.data.user));
         setTimeout(() => onLoginSuccess(res.data.user), 1000);
-      } else {
-        setTimeout(() => switchToLogin(), 2000);
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed.');
-    } finally {
-      setLoading(false);
-    }
+      } else setTimeout(() => switchToLogin(), 2000);
+    } catch (err) { setError(err.response?.data?.message || 'Registration failed.'); }
+    finally { setLoading(false); }
   };
 
   return (
@@ -68,66 +48,34 @@ function Signup({ switchToLogin, onLoginSuccess }) {
       <div className="cs-auth-box">
         <div className="cs-auth-logo">🎓</div>
         <h2 className="cs-auth-title">Join CampuSwap</h2>
-        <p className="cs-auth-sub">
-          {otpSent ? 'Enter the code sent to your email' : 'Create your free campus account'}
-        </p>
-
+        <p className="cs-auth-sub">{otpSent ? 'Enter the code sent to your email' : 'Free. No commission. Ever.'}</p>
         <form onSubmit={otpSent ? handleFinalSignup : handleRequestOtp}>
           {!otpSent && (
             <>
+              <div className="cs-field"><label className="cs-label">Full Name</label><input className="cs-input" type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Your full name" required /></div>
+              <div className="cs-field"><label className="cs-label">College Email</label><input className="cs-input" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="you@college.edu" required /></div>
               <div className="cs-field">
-                <label className="cs-label">Full Name</label>
-                <input className="cs-input" type="text" name="name" value={formData.name}
-                  onChange={handleChange} placeholder="Your full name" required />
-              </div>
-              <div className="cs-field">
-                <label className="cs-label">College Email</label>
-                <input className="cs-input" type="email" name="email" value={formData.email}
-                  onChange={handleChange} placeholder="you@college.edu" required />
-              </div>
-              <div className="cs-field">
-                <label className="cs-label">
-                  WhatsApp Number
-                  <span style={{ color: '#475569', fontWeight: 400, textTransform: 'none', letterSpacing: 0, marginLeft: '6px' }}>(optional)</span>
-                </label>
-                <input className="cs-input" type="text" name="phone" value={formData.phone}
-                  onChange={handleChange} placeholder="+91 XXXXX XXXXX" />
+                <label className="cs-label">WhatsApp <span style={{ color: 'var(--text3)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                <input className="cs-input" type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="+91 XXXXX XXXXX" />
               </div>
             </>
           )}
-
           {otpSent && (
             <>
               <div className="cs-otp-box">
                 <label className="cs-otp-label">📨 Verification Code</label>
-                <input
-                  className="cs-otp-input"
-                  type="text" name="otp" value={formData.otp}
-                  onChange={handleChange} maxLength="6" placeholder="000000" required
-                />
+                <input className="cs-otp-input" type="text" name="otp" value={formData.otp} onChange={handleChange} maxLength="6" placeholder="000000" required />
               </div>
-              <div className="cs-field">
-                <label className="cs-label">Choose Password</label>
-                <input className="cs-input" type="password" name="password" value={formData.password}
-                  onChange={handleChange} placeholder="Min. 4 characters" required />
-              </div>
+              <div className="cs-field"><label className="cs-label">Choose Password</label><input className="cs-input" type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Min. 4 characters" required /></div>
             </>
           )}
-
           <button className="cs-btn-primary" type="submit" disabled={loading}>
-            {loading ? 'Processing...' : otpSent ? 'Verify & Create Account →' : 'Send Verification Code →'}
+            {loading ? 'Processing...' : otpSent ? 'Create Account →' : 'Send Verification Code →'}
           </button>
         </form>
-
         {message && <div className="cs-success">{message}</div>}
         {error && <div className="cs-error">{error}</div>}
-
-        {!otpSent && (
-          <p className="cs-switch">
-            Already have an account?{' '}
-            <span className="cs-switch-link" onClick={switchToLogin}>Sign in</span>
-          </p>
-        )}
+        {!otpSent && <p className="cs-switch">Have an account? <span className="cs-switch-link" onClick={switchToLogin}>Sign in</span></p>}
       </div>
     </div>
   );

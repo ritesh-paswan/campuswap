@@ -1,0 +1,404 @@
+/* CampuSwap Design System — Option C: Vibrant Campus */
+/*
+PALETTE:
+  --bg:        #0A0A0F   deep campus night
+  --surface:   #13131A   card surface
+  --surface2:  #1C1C27   elevated surface
+  --border:    rgba(255,255,255,0.07)
+  --orange:    #FF6B35   energy orange (primary CTA)
+  --purple:    #7C3AED   campus purple (accent)
+  --green:     #10B981   price / success
+  --pink:      #F43F5E   delete / alert
+  --text:      #F8F8FF   primary text
+  --text2:     #9999BB   secondary text
+  --text3:     #4A4A6A   muted text
+
+TYPOGRAPHY:
+  Display: 'Plus Jakarta Sans' — modern, energetic, campus-friendly
+  Body: 'Inter' — clean utility
+
+SIGNATURE:
+  Gradient pill category badges + warm orange glow on primary CTAs
+  Cards have a subtle top-border color accent per category
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0A0A0F;
+  --surface: #13131A;
+  --surface2: #1C1C27;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --orange: #FF6B35;
+  --orange-glow: rgba(255,107,53,0.25);
+  --purple: #7C3AED;
+  --purple-light: #A78BFA;
+  --green: #10B981;
+  --pink: #F43F5E;
+  --blue: #3B82F6;
+  --text: #F8F8FF;
+  --text2: #9999BB;
+  --text3: #4A4A6A;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── NAV ─────────────────────────────────── */
+.cs-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,10,15,0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+.cs-nav-inner {
+  max-width: 1140px; margin: 0 auto; height: 60px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.cs-logo {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.35rem; font-weight: 800; letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--orange) 0%, #FF8C69 50%, var(--purple-light) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  cursor: pointer; white-space: nowrap;
+}
+.cs-nav-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.cs-greeting { font-size: 0.8rem; color: var(--text2); font-weight: 500; white-space: nowrap; }
+.cs-greeting span { color: var(--orange); font-weight: 600; }
+.cs-btn-nav-back {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px; background: var(--surface2); color: var(--text2);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  font-family: 'Inter', sans-serif; white-space: nowrap;
+}
+.cs-btn-nav-back:hover { color: var(--text); border-color: var(--border2); }
+.cs-btn-nav-login {
+  padding: 6px 14px; background: transparent; color: var(--text2);
+  border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
+}
+.cs-btn-nav-login:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+.cs-btn-nav-signup {
+  padding: 6px 16px;
+  background: var(--orange); color: #fff;
+  border: none; border-radius: var(--radius-sm);
+  font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
+  box-shadow: 0 0 16px var(--orange-glow);
+}
+.cs-btn-nav-signup:hover { background: #ff7a4a; transform: translateY(-1px); box-shadow: 0 0 24px var(--orange-glow); }
+.cs-btn-logout {
+  padding: 6px 12px; background: rgba(244,63,94,0.08); color: #F87171;
+  border: 1px solid rgba(244,63,94,0.15); border-radius: var(--radius-sm);
+  font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
+}
+.cs-btn-logout:hover { background: rgba(244,63,94,0.15); }
+.cs-btn-inbox {
+  position: relative; padding: 6px 14px;
+  background: var(--surface2); color: var(--text2);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
+  display: flex; align-items: center; gap: 5px;
+}
+.cs-btn-inbox:hover { color: var(--text); border-color: var(--border2); }
+.cs-btn-inbox.active { background: rgba(255,107,53,0.1); color: var(--orange); border-color: rgba(255,107,53,0.25); }
+.cs-unread-badge {
+  position: absolute; top: -5px; right: -5px;
+  background: var(--orange); color: #fff;
+  font-size: 0.6rem; font-weight: 800;
+  padding: 2px 5px; border-radius: 20px; min-width: 17px; text-align: center; line-height: 1.5;
+}
+
+/* ─── HERO ────────────────────────────────── */
+.cs-hero {
+  padding: 64px 20px 56px; text-align: center;
+  background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255,107,53,0.12) 0%, transparent 60%);
+}
+.cs-hero-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(2.2rem, 6vw, 3.8rem); font-weight: 800;
+  color: var(--text); line-height: 1.1; letter-spacing: -1.5px;
+  margin-bottom: 16px;
+}
+.cs-hero-title span {
+  background: linear-gradient(135deg, var(--orange), #FF8C69);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.cs-hero-sub { font-size: 1rem; color: var(--text2); margin: 0 auto 32px; max-width: 440px; line-height: 1.6; }
+.cs-hero-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 48px; }
+.cs-btn-hero-primary {
+  padding: 13px 28px; background: var(--orange); color: #fff;
+  border: none; border-radius: var(--radius-md); font-size: 0.95rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;
+  box-shadow: 0 0 32px var(--orange-glow);
+}
+.cs-btn-hero-primary:hover { background: #ff7a4a; transform: translateY(-2px); box-shadow: 0 0 48px var(--orange-glow); }
+.cs-btn-hero-secondary {
+  padding: 13px 28px; background: var(--surface2); color: var(--text2);
+  border: 1px solid var(--border2); border-radius: var(--radius-md);
+  font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
+}
+.cs-btn-hero-secondary:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+.cs-hero-stats { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; padding-top: 36px; border-top: 1px solid var(--border); }
+.cs-hero-stat-num { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--text); line-height: 1; }
+.cs-hero-stat-num span { color: var(--orange); }
+.cs-hero-stat-label { font-size: 0.75rem; color: var(--text3); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* ─── PUSH BANNER ────────────────────────── */
+.cs-push-banner {
+  background: linear-gradient(135deg, rgba(255,107,53,0.08), rgba(124,58,237,0.08));
+  border: 1px solid rgba(255,107,53,0.2); border-radius: var(--radius-md);
+  padding: 14px 18px; margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+}
+.cs-push-banner-text { font-size: 0.875rem; color: var(--text2); }
+.cs-push-banner-text strong { color: var(--text); }
+.cs-btn-push-enable {
+  padding: 7px 16px; background: var(--orange); color: #fff;
+  border: none; border-radius: var(--radius-sm); font-size: 0.82rem; font-weight: 700;
+  cursor: pointer; font-family: 'Inter', sans-serif;
+}
+.cs-btn-push-dismiss { padding: 7px 10px; background: transparent; color: var(--text3); border: none; font-size: 0.8rem; cursor: pointer; font-family: 'Inter', sans-serif; }
+
+/* ─── MAIN ────────────────────────────────── */
+.cs-main { max-width: 1140px; margin: 0 auto; padding: 24px 20px; }
+.cs-market-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+.cs-market-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }
+.cs-market-title span { color: var(--orange); }
+.cs-btn-sell {
+  padding: 9px 20px; background: var(--orange); color: #fff;
+  border: none; border-radius: var(--radius-sm); font-size: 0.875rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;
+  box-shadow: 0 0 20px var(--orange-glow);
+}
+.cs-btn-sell:hover { background: #ff7a4a; transform: translateY(-1px); }
+.cs-btn-sell.cancel { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); box-shadow: none; font-family: 'Inter', sans-serif; }
+.cs-btn-sell.cancel:hover { color: var(--text); transform: none; background: var(--surface2); }
+
+/* ─── LOADING ────────────────────────────── */
+.cs-loading { text-align: center; padding: 60px 20px; }
+.cs-loading-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin: 0 4px; animation: cspulse 1.4s infinite ease-in-out; }
+.cs-loading-dot:nth-child(1) { background: var(--orange); }
+.cs-loading-dot:nth-child(2) { background: var(--purple-light); animation-delay: 0.2s; }
+.cs-loading-dot:nth-child(3) { background: var(--green); animation-delay: 0.4s; }
+@keyframes cspulse { 0%, 80%, 100% { transform: scale(0.5); opacity: 0.3; } 40% { transform: scale(1); opacity: 1; } }
+
+/* ─── SEARCH & FILTER ────────────────────── */
+.cs-search-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px; }
+.cs-search-wrap-inner { position: relative; }
+.cs-search-input {
+  width: 100%; padding: 11px 16px 11px 42px;
+  background: var(--bg); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-size: 0.875rem; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.2s;
+}
+.cs-search-input:focus { border-color: var(--orange); }
+.cs-search-input::placeholder { color: var(--text3); }
+.cs-search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 0.9rem; pointer-events: none; }
+.cs-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.cs-filter-btn {
+  padding: 5px 13px; border-radius: 20px;
+  border: 1px solid var(--border2); background: transparent; color: var(--text3);
+  font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
+}
+.cs-filter-btn:hover { color: var(--text2); border-color: rgba(255,255,255,0.2); }
+.cs-filter-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; font-weight: 700; }
+.cs-listings-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.cs-listings-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.95rem; font-weight: 700; color: var(--text2); }
+.cs-listings-count { padding: 3px 10px; background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.2); border-radius: 20px; font-size: 0.72rem; font-weight: 700; color: var(--orange); }
+.cs-sort-select { padding: 5px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text2); font-size: 0.78rem; font-family: 'Inter', sans-serif; outline: none; cursor: pointer; margin-left: auto; }
+
+/* ─── CATEGORY COLORS ────────────────────── */
+.cat-textbooks    { color: #60A5FA; border-top-color: #60A5FA !important; }
+.cat-electronics  { color: #A78BFA; border-top-color: #A78BFA !important; }
+.cat-lab          { color: #34D399; border-top-color: #34D399 !important; }
+.cat-hostel       { color: #FBBF24; border-top-color: #FBBF24 !important; }
+.cat-clothing     { color: #F472B6; border-top-color: #F472B6 !important; }
+.cat-other        { color: #94A3B8; border-top-color: #94A3B8 !important; }
+
+/* ─── PRODUCT GRID ───────────────────────── */
+.cs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.cs-product-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-top: 3px solid var(--border); /* overridden by cat class */
+  border-radius: var(--radius-md); overflow: hidden;
+  cursor: pointer; transition: all 0.22s;
+}
+.cs-product-card:hover { transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,0.5); border-color: var(--border2); }
+.cs-product-img { width: 100%; height: 170px; object-fit: cover; display: block; background: var(--surface2); }
+.cs-product-img-placeholder { width: 100%; height: 170px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
+.cs-product-body { padding: 14px; }
+.cs-product-cat-badge {
+  display: inline-block; padding: 3px 10px;
+  border-radius: 20px; font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  background: rgba(255,255,255,0.05); margin-bottom: 7px;
+}
+.cs-product-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.9rem; font-weight: 700; color: var(--text); margin-bottom: 5px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cs-product-desc { font-size: 0.775rem; color: var(--text3); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cs-product-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-top: 1px solid var(--border); }
+.cs-product-price { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.05rem; font-weight: 800; color: var(--green); }
+.cs-product-seller { font-size: 0.7rem; color: var(--text3); }
+.cs-product-time { font-size: 0.68rem; color: var(--text3); font-weight: 500; }
+.cs-btn-delete { padding: 4px 10px; background: rgba(244,63,94,0.08); color: #F87171; border: 1px solid rgba(244,63,94,0.15); border-radius: var(--radius-sm); font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+.cs-btn-delete:hover { background: rgba(244,63,94,0.16); }
+.cs-btn-share { padding: 3px 8px; background: var(--surface2); color: var(--text3); border: 1px solid var(--border); border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+.cs-btn-share:hover { color: var(--text2); }
+
+/* ─── LOGIN PROMPT ───────────────────────── */
+.cs-login-prompt { background: linear-gradient(135deg, rgba(255,107,53,0.06), rgba(124,58,237,0.06)); border: 1px solid rgba(255,107,53,0.15); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.cs-login-prompt-text { font-size: 0.875rem; color: var(--text2); }
+.cs-login-prompt-text strong { color: var(--text); }
+.cs-login-prompt-actions { display: flex; gap: 8px; }
+.cs-btn-prompt-login { padding: 7px 14px; background: transparent; color: var(--orange); border: 1px solid rgba(255,107,53,0.3); border-radius: var(--radius-sm); font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
+.cs-btn-prompt-signup { padding: 7px 14px; background: var(--orange); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 0.82rem; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+
+/* ─── EMPTY ──────────────────────────────── */
+.cs-empty { text-align: center; padding: 60px 20px; color: var(--text3); }
+.cs-empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+.cs-empty-text { font-size: 0.9rem; }
+
+/* ─── INPUTS ─────────────────────────────── */
+.cs-input {
+  width: 100%; padding: 11px 14px;
+  background: var(--bg); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-size: 0.9rem; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.cs-input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(255,107,53,0.12); }
+.cs-input:disabled { opacity: 0.5; cursor: not-allowed; }
+.cs-input::placeholder { color: var(--text3); }
+.cs-label { display: block; margin-bottom: 6px; font-size: 0.78rem; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; }
+.cs-btn-primary {
+  width: 100%; padding: 13px;
+  background: var(--orange); color: #fff;
+  border: none; border-radius: var(--radius-sm); font-size: 0.95rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;
+  box-shadow: 0 0 20px var(--orange-glow);
+}
+.cs-btn-primary:hover:not(:disabled) { background: #ff7a4a; transform: translateY(-1px); box-shadow: 0 0 32px var(--orange-glow); }
+.cs-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.cs-success { margin-top: 14px; padding: 11px 14px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: var(--radius-sm); color: var(--green); font-size: 0.875rem; font-weight: 500; text-align: center; }
+.cs-error { margin-top: 14px; padding: 11px 14px; background: rgba(244,63,94,0.08); border: 1px solid rgba(244,63,94,0.2); border-radius: var(--radius-sm); color: #F87171; font-size: 0.875rem; font-weight: 500; text-align: center; }
+
+/* ─── AUTH ───────────────────────────────── */
+.cs-auth-page {
+  min-height: calc(100vh - 60px); display: flex; align-items: center; justify-content: center; padding: 32px 20px;
+  background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(255,107,53,0.06) 0%, transparent 60%);
+}
+.cs-auth-box { width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 36px 32px; box-shadow: 0 32px 64px rgba(0,0,0,0.5); }
+.cs-auth-logo { text-align: center; margin-bottom: 6px; font-size: 2.2rem; }
+.cs-auth-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.5rem; font-weight: 800; text-align: center; color: var(--text); margin-bottom: 6px; letter-spacing: -0.5px; }
+.cs-auth-sub { text-align: center; color: var(--text3); font-size: 0.875rem; margin-bottom: 28px; }
+.cs-field { margin-bottom: 16px; }
+.cs-switch { text-align: center; margin-top: 20px; font-size: 0.875rem; color: var(--text3); }
+.cs-switch-link { color: var(--orange); cursor: pointer; font-weight: 600; }
+.cs-switch-link:hover { text-decoration: underline; }
+.cs-otp-box { background: rgba(255,107,53,0.05); border: 1px solid rgba(255,107,53,0.2); border-radius: var(--radius-sm); padding: 18px; margin-bottom: 16px; }
+.cs-otp-label { display: block; margin-bottom: 10px; font-size: 0.78rem; font-weight: 700; color: var(--orange); text-transform: uppercase; letter-spacing: 0.06em; }
+.cs-otp-input { width: 100%; padding: 14px; background: var(--bg); border: 1px solid rgba(255,107,53,0.3); border-radius: var(--radius-sm); color: var(--orange); font-size: 1.8rem; font-weight: 800; text-align: center; letter-spacing: 10px; font-family: 'Plus Jakarta Sans', sans-serif; outline: none; transition: border-color 0.2s; }
+.cs-otp-input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(255,107,53,0.12); }
+
+/* ─── PRODUCT FORM ───────────────────────── */
+.cs-form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 24px; margin-bottom: 24px; }
+.cs-form-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.05rem; font-weight: 800; color: var(--text); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+.cs-form-title::before { content: ''; display: block; width: 4px; height: 20px; background: linear-gradient(180deg, var(--orange), var(--purple-light)); border-radius: 2px; }
+.cs-form-row { display: flex; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+.cs-form-group { margin-bottom: 16px; }
+.cs-textarea { width: 100%; padding: 11px 14px; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius-sm); color: var(--text); font-size: 0.9rem; font-family: 'Inter', sans-serif; resize: vertical; outline: none; transition: border-color 0.2s; }
+.cs-textarea:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(255,107,53,0.12); }
+.cs-select { width: 100%; padding: 11px 14px; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius-sm); color: var(--text); font-size: 0.9rem; font-family: 'Inter', sans-serif; outline: none; cursor: pointer; transition: border-color 0.2s; }
+.cs-select:focus { border-color: var(--orange); }
+.cs-file-input { width: 100%; padding: 11px 14px; background: var(--bg); border: 1px dashed rgba(255,107,53,0.3); border-radius: var(--radius-sm); color: var(--text2); font-size: 0.875rem; font-family: 'Inter', sans-serif; cursor: pointer; }
+.cs-file-input::-webkit-file-upload-button { padding: 5px 12px; background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.25); border-radius: 6px; color: var(--orange); font-size: 0.78rem; font-weight: 600; cursor: pointer; margin-right: 10px; font-family: 'Inter', sans-serif; }
+.cs-btn-post { padding: 11px 28px; background: var(--green); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif; box-shadow: 0 0 20px rgba(16,185,129,0.2); }
+.cs-btn-post:hover:not(:disabled) { background: #0ea472; transform: translateY(-1px); }
+.cs-btn-post:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── PRODUCT DETAIL ─────────────────────── */
+.cs-detail-layout { display: flex; gap: 36px; flex-wrap: wrap; }
+.cs-detail-img-wrap { flex: 1; min-width: 260px; }
+.cs-detail-img { width: 100%; max-height: 400px; object-fit: contain; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface2); }
+.cs-detail-info { flex: 1; min-width: 260px; display: flex; flex-direction: column; }
+.cs-detail-cat { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+.cs-detail-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--text); line-height: 1.2; margin-bottom: 10px; letter-spacing: -0.5px; }
+.cs-detail-price { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 2rem; font-weight: 800; color: var(--green); margin-bottom: 20px; }
+.cs-detail-desc-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 8px; }
+.cs-detail-desc { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; color: var(--text2); font-size: 0.875rem; line-height: 1.7; margin-bottom: 18px; flex: 1; }
+.cs-detail-seller { padding: 12px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.82rem; color: var(--text3); margin-bottom: 14px; }
+.cs-detail-seller strong { color: var(--text2); }
+.cs-btn-message { width: 100%; padding: 14px; background: var(--orange); color: #fff; border: none; border-radius: var(--radius-md); font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 0 24px var(--orange-glow); }
+.cs-btn-message:hover { background: #ff7a4a; transform: translateY(-2px); box-shadow: 0 0 40px var(--orange-glow); }
+
+/* ─── INBOX ──────────────────────────────── */
+.cs-inbox-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--text); margin-bottom: 20px; letter-spacing: -0.5px; }
+.cs-conv-list { display: flex; flex-direction: column; gap: 8px; }
+.cs-conv-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all 0.2s; }
+.cs-conv-card:hover { border-color: var(--border2); transform: translateX(3px); background: var(--surface2); }
+.cs-conv-card.unread { border-color: rgba(255,107,53,0.2); background: rgba(255,107,53,0.03); }
+.cs-conv-img { width: 48px; height: 48px; border-radius: var(--radius-sm); object-fit: cover; background: var(--surface2); flex-shrink: 0; }
+.cs-conv-img-placeholder { width: 48px; height: 48px; border-radius: var(--radius-sm); background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+.cs-conv-body { flex: 1; min-width: 0; }
+.cs-conv-product { font-size: 0.7rem; color: var(--orange); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+.cs-conv-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.88rem; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.cs-conv-last { font-size: 0.775rem; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cs-conv-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.cs-conv-time { font-size: 0.7rem; color: var(--text3); }
+.cs-conv-unread-dot { width: 8px; height: 8px; background: var(--orange); border-radius: 50%; }
+
+/* ─── CHAT ───────────────────────────────── */
+.cs-chat-wrap { display: flex; flex-direction: column; height: calc(100vh - 60px); max-width: 1140px; margin: 0 auto; padding: 0 20px; }
+.cs-chat-topbar { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.cs-chat-product-img { width: 38px; height: 38px; border-radius: var(--radius-sm); object-fit: cover; background: var(--surface2); flex-shrink: 0; }
+.cs-chat-product-img-placeholder { width: 38px; height: 38px; border-radius: var(--radius-sm); background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+.cs-chat-header-info { flex: 1; }
+.cs-chat-header-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.9rem; font-weight: 700; color: var(--text); }
+.cs-chat-header-sub { font-size: 0.72rem; color: var(--text3); margin-top: 1px; }
+.cs-chat-messages { flex: 1; overflow-y: auto; padding: 12px 0; display: flex; flex-direction: column; gap: 2px; }
+.cs-chat-messages::-webkit-scrollbar { width: 3px; }
+.cs-chat-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.cs-chat-input-wrap { padding: 10px 0; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0; }
+.cs-chat-input { flex: 1; padding: 10px 14px; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-sm); color: var(--text); font-size: 0.875rem; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.2s; }
+.cs-chat-input:focus { border-color: var(--orange); }
+.cs-chat-input::placeholder { color: var(--text3); }
+.cs-btn-send { padding: 10px 18px; background: var(--orange); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 0.875rem; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif; box-shadow: 0 0 12px var(--orange-glow); }
+.cs-btn-send:hover:not(:disabled) { background: #ff7a4a; }
+.cs-btn-send:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+.cs-chat-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: var(--text3); gap: 10px; }
+.cs-chat-empty-icon { font-size: 2rem; }
+.cs-msg { display: flex; flex-direction: column; max-width: 66%; }
+.cs-msg.mine { align-self: flex-end; align-items: flex-end; }
+.cs-msg.theirs { align-self: flex-start; align-items: flex-start; }
+
+/* ─── RESPONSIVE ─────────────────────────── */
+@media (max-width: 640px) {
+  .cs-nav { padding: 0 14px; }
+  .cs-main { padding: 16px 14px; }
+  .cs-hero { padding: 44px 16px 40px; }
+  .cs-hero-stats { gap: 24px; }
+  .cs-auth-box { padding: 28px 20px; }
+  .cs-form-card { padding: 18px; }
+  .cs-market-title { font-size: 1.2rem; }
+  .cs-detail-title { font-size: 1.3rem; }
+  .cs-detail-price { font-size: 1.6rem; }
+  .cs-grid { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
+  .cs-product-img { height: 130px; }
+  .cs-greeting { display: none; }
+  .cs-login-prompt { flex-direction: column; }
+  .cs-msg { max-width: 86%; }
+  .cs-chat-wrap { padding: 0 14px; }
+  .cs-push-banner { flex-direction: column; }
+}

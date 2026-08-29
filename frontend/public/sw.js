@@ -15,7 +15,7 @@ self.addEventListener('push', (e) => {
 
   const options = {
     body: data.body,
-    icon: '/favicon.svg',
+    icon: '/icon-192.png',
     //badge: '/favicon.svg',
     tag: data.tag || 'campuswap-notification',
     renotify: true,

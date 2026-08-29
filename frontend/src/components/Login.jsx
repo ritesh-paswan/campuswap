@@ -8,21 +8,16 @@ function Login({ switchToSignup, onLoginSuccess, switchToForgot }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(''); setLoading(true);
+    e.preventDefault(); setError(''); setLoading(true);
     try {
-      const response = await axios.post(`${API_URL}/api/auth/login`, formData);
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      onLoginSuccess(response.data.user);
+      const res = await axios.post(`${API_URL}/api/auth/login`, formData);
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data.user));
+      onLoginSuccess(res.data.user);
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Check your credentials.');
-    } finally {
-      setLoading(false);
-    }
+      setError(err.response?.data?.message || 'Login failed.');
+    } finally { setLoading(false); }
   };
 
   return (
@@ -31,46 +26,22 @@ function Login({ switchToSignup, onLoginSuccess, switchToForgot }) {
         <div className="cs-auth-logo">⚡</div>
         <h2 className="cs-auth-title">Welcome back</h2>
         <p className="cs-auth-sub">Sign in to your CampuSwap account</p>
-
         <form onSubmit={handleSubmit}>
           <div className="cs-field">
             <label className="cs-label">Email</label>
-            <input
-              className="cs-input" type="email" name="email"
-              value={formData.email} onChange={handleChange}
-              placeholder="you@college.edu" required disabled={loading}
-            />
+            <input className="cs-input" type="email" name="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="you@college.edu" required disabled={loading} />
           </div>
           <div className="cs-field">
             <label className="cs-label">Password</label>
-            <input
-              className="cs-input" type="password" name="password"
-              value={formData.password} onChange={handleChange}
-              placeholder="••••••••" required disabled={loading}
-            />
+            <input className="cs-input" type="password" name="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} placeholder="••••••••" required disabled={loading} />
           </div>
-
-          {/* Forgot password link */}
-          <div style={{ textAlign: 'right', marginTop: '-10px', marginBottom: '18px' }}>
-            <span
-              onClick={switchToForgot}
-              style={{ fontSize: '0.8rem', color: '#63b3ed', cursor: 'pointer', fontWeight: 500 }}
-            >
-              Forgot password?
-            </span>
+          <div style={{ textAlign: 'right', marginTop: '-8px', marginBottom: '16px' }}>
+            <span onClick={switchToForgot} style={{ fontSize: '0.8rem', color: 'var(--orange)', cursor: 'pointer', fontWeight: 500 }}>Forgot password?</span>
           </div>
-
-          <button className="cs-btn-primary" type="submit" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign in →'}
-          </button>
+          <button className="cs-btn-primary" type="submit" disabled={loading}>{loading ? 'Signing in...' : 'Sign in →'}</button>
         </form>
-
         {error && <div className="cs-error">{error}</div>}
-
-        <p className="cs-switch">
-          No account?{' '}
-          <span className="cs-switch-link" onClick={switchToSignup}>Create one free</span>
-        </p>
+        <p className="cs-switch">No account? <span className="cs-switch-link" onClick={switchToSignup}>Create one free</span></p>
       </div>
     </div>
   );

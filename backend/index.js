@@ -100,11 +100,11 @@ io.on('connection', (socket) => {
 
       if (!recipientOnline) {
         await sendPushToUser(
-          recipientId,
-          `New message from ${senderName}`,
-          `About: ${productTitle} — "${content.trim().slice(0, 60)}${content.length > 60 ? '...' : ''}"`,
-          'https://campuswap.vercel.app'
-        );
+        recipientId,
+       `CampuSwap — ${senderName}`,   // Shows app name clearly
+       `${productTitle}: "${content.trim().slice(0, 60)}${content.length > 60 ? '...' : ''}"`,
+       'https://campuswap.vercel.app'
+      );
       }
 
     } catch (err) {
