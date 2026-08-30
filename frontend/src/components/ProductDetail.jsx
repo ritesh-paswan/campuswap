@@ -40,6 +40,10 @@ function ImageCarousel({ images }) {
 
 function ProductDetail({ product, onBack, onLoginRequired, isLoggedIn, onMessageSeller }) {
   const [fullProduct, setFullProduct] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reported, setReported] = useState(false);
 
   useEffect(() => {
     axios.get(`${API_URL}/api/products/${product.id}`)
@@ -56,6 +60,24 @@ function ProductDetail({ product, onBack, onLoginRequired, isLoggedIn, onMessage
     return u?.id === display.seller_id;
   };
 
+  const handleReport = async () => {
+    if (!reportReason.trim()) { alert('Please describe the issue.'); return; }
+    setReportLoading(true);
+    const token = localStorage.getItem('token');
+    try {
+      await axios.post(
+        `${API_URL}/api/products/${product.id}/report`,
+        { reason: reportReason.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setReported(true);
+      setShowReportModal(false);
+      alert('Report submitted. Admin will review this listing.');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to submit report.');
+    } finally { setReportLoading(false); }
+  };
+
   return (
     <div>
       <div className="cs-detail-layout">
@@ -68,12 +90,35 @@ function ProductDetail({ product, onBack, onLoginRequired, isLoggedIn, onMessage
           <div className="cs-detail-price">₹{display.price}</div>
           <div className="cs-detail-desc-label">About this item</div>
           <div className="cs-detail-desc">{display.description}</div>
-          <div className="cs-detail-seller">Listed by <strong>{display.seller_name || `User #${display.seller_id}`}</strong></div>
+          <div className="cs-detail-seller">
+            Listed by <strong>{display.seller_name || `User #${display.seller_id}`}</strong>
+          </div>
+
           {!isSeller() && (
-            <button className="cs-btn-message" onClick={() => { if (!isLoggedIn) { onLoginRequired(); return; } onMessageSeller(display); }}>
-              <span>💬</span> {isLoggedIn ? 'Message Seller' : 'Sign in to message seller'}
-            </button>
+            <>
+              <button className="cs-btn-message" onClick={() => { if (!isLoggedIn) { onLoginRequired(); return; } onMessageSeller(display); }}>
+                <span>💬</span> {isLoggedIn ? 'Message Seller' : 'Sign in to message seller'}
+              </button>
+
+              {/* Report button */}
+              {isLoggedIn && !reported && (
+                <button
+                  onClick={() => setShowReportModal(true)}
+                  style={{ marginTop: '10px', width: '100%', padding: '10px', background: 'transparent', color: 'var(--text3)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif', transition: 'all 0.2s' }}
+                  onMouseOver={e => e.target.style.color = '#F87171'}
+                  onMouseOut={e => e.target.style.color = 'var(--text3)'}
+                >
+                  ⚠️ Report this listing
+                </button>
+              )}
+              {reported && (
+                <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(244,63,94,0.06)', border: '1px solid rgba(244,63,94,0.15)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', color: '#F87171', textAlign: 'center' }}>
+                  ✓ Reported — admin will review
+                </div>
+              )}
+            </>
           )}
+
           {isSeller() && (
             <div style={{ padding: '13px 16px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', color: 'var(--green)', textAlign: 'center' }}>
               ✓ This is your listing
@@ -81,6 +126,35 @@ function ProductDetail({ product, onBack, onLoginRequired, isLoggedIn, onMessage
           )}
         </div>
       </div>
+
+      {/* Report Modal */}
+      {showReportModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '28px', width: '100%', maxWidth: '420px' }}>
+            <h3 style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '1.1rem', fontWeight: 800, color: 'var(--text)', marginBottom: '8px' }}>Report Listing</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text3)', marginBottom: '16px' }}>Tell us what's wrong with this listing.</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+              {['Fake or scam listing', 'Inappropriate image', 'Wrong/misleading price', 'Prohibited item', 'Other'].map(reason => (
+                <button
+                  key={reason}
+                  onClick={() => setReportReason(reason)}
+                  style={{ padding: '10px 14px', background: reportReason === reason ? 'rgba(255,107,53,0.1)' : 'var(--surface2)', border: `1px solid ${reportReason === reason ? 'rgba(255,107,53,0.3)' : 'var(--border)'}`, borderRadius: 'var(--radius-sm)', color: reportReason === reason ? 'var(--orange)' : 'var(--text2)', fontSize: '0.875rem', cursor: 'pointer', textAlign: 'left', fontFamily: 'Inter, sans-serif', fontWeight: reportReason === reason ? 600 : 400 }}
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => setShowReportModal(false)} style={{ flex: 1, padding: '11px', background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Cancel</button>
+              <button onClick={handleReport} disabled={reportLoading || !reportReason} style={{ flex: 1, padding: '11px', background: 'rgba(244,63,94,0.9)', color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif', opacity: reportLoading || !reportReason ? 0.5 : 1 }}>
+                {reportLoading ? 'Submitting...' : 'Submit Report'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -14,7 +14,7 @@ const storage = new CloudinaryStorage({
     folder: 'campuswap_products',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
     // ✅ Fix 2: Cloudinary AI content moderation — blocks inappropriate images
-    moderation: 'aws_rek',
+    //moderation: 'aws_rek',
     transformation: [
       { width: 800, height: 800, crop: 'limit', quality: 'auto' }
     ]
