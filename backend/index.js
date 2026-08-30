@@ -137,6 +137,10 @@ io.on('connection', (socket) => {
 
 app.set('io', io);
 
+//admin routes
+const adminRoutes = require('./routes/admin');
+app.use('/api/admin', adminRoutes);
+
 // ─────────────────────────────────────────────
 // Auto-delete listings older than 15 days
 // Runs once on startup then every 24 hours

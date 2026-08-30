@@ -33,17 +33,47 @@ function ProductForm({ onProductAdded }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true); setMessage(''); setError('');
+
     const token = localStorage.getItem('token');
     if (!token) { setError('You must be logged in.'); setLoading(false); return; }
     if (!images[0]) { setError('Please select at least one image.'); setLoading(false); return; }
+
+    // ✅ Fix 1: Price validation
+    const price = parseFloat(formData.price);
+    if (isNaN(price) || price < 1) {
+      setError('Price must be at least ₹1.');
+      setLoading(false); return;
+    }
+    if (price > 10000) {
+      setError('Price cannot exceed ₹10,000. Contact admin for high-value items.');
+      setLoading(false); return;
+    }
+
+    // Title validation
+    if (formData.title.trim().length < 3) {
+      setError('Title must be at least 3 characters.');
+      setLoading(false); return;
+    }
+
+    // Description validation
+    if (formData.description.trim().length < 10) {
+      setError('Please write a more detailed description (at least 10 characters).');
+      setLoading(false); return;
+    }
+
     const data = new FormData();
-    data.append('title', formData.title); data.append('price', parseFloat(formData.price));
-    data.append('description', formData.description); data.append('category', formData.category);
+    data.append('title', formData.title.trim());
+    data.append('price', price);
+    data.append('description', formData.description.trim());
+    data.append('category', formData.category);
     if (images[0]) data.append('image_1', images[0]);
     if (images[1]) data.append('image_2', images[1]);
     if (images[2]) data.append('image_3', images[2]);
+
     try {
-      await axios.post(`${API_URL}/api/products/upload`, data, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } });
+      await axios.post(`${API_URL}/api/products/upload`, data, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+      });
       setMessage('Listed successfully! 🎉');
       setFormData({ title: '', price: '', description: '', category: 'Textbooks' });
       setImages([null, null, null]); setPreviews([null, null, null]);
@@ -66,7 +96,7 @@ function ProductForm({ onProductAdded }) {
           </div>
           <div style={{ flex: 1, minWidth: '100px' }}>
             <label className="cs-label">Price (₹)</label>
-            <input className="cs-input" type="number" name="price" value={formData.price} onChange={handleChange} placeholder="299" required />
+            <input className="cs-input" type="number" name="price" value={formData.price} onChange={handleChange} placeholder="299" min="1" max="10000" required />
           </div>
           <div style={{ flex: 1, minWidth: '140px' }}>
             <label className="cs-label">Category</label>
@@ -96,11 +126,18 @@ function ProductForm({ onProductAdded }) {
               </div>
             ))}
           </div>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text3)', marginTop: '8px' }}>
+            ⚠️ Inappropriate images will be automatically blocked.
+          </p>
         </div>
 
         <div className="cs-form-group">
           <label className="cs-label">Description</label>
           <textarea className="cs-textarea" name="description" value={formData.description} onChange={handleChange} placeholder="Condition, edition, any relevant details..." rows="3" required />
+        </div>
+
+        <div style={{ padding: '12px 14px', background: 'rgba(255,107,53,0.04)', border: '1px solid rgba(255,107,53,0.1)', borderRadius: '8px', fontSize: '0.78rem', color: 'var(--text3)', marginBottom: '16px' }}>
+          📋 By listing, you confirm this is a genuine item. Fake listings will result in a permanent ban.
         </div>
 
         <button className="cs-btn-post" type="submit" disabled={loading}>

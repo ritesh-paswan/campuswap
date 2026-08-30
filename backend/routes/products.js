@@ -228,4 +228,19 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+  // POST /api/products/:id/report
+  router.post('/:id/report', authenticateToken, async (req, res) => {
+    const { reason } = req.body;
+    if (!reason) return res.status(400).json({ message: 'Reason is required.' });
+     try {
+    await pool.query(
+      'UPDATE products SET is_reported = 1, report_reason = ? WHERE id = ?',
+      [reason, req.params.id]
+    );
+    return res.json({ message: 'Report submitted.' });
+    } catch (error) {
+    return res.status(500).json({ message: 'Failed to submit report.' });
+  }
+  });
+
 module.exports = router;

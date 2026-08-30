@@ -7,10 +7,12 @@ import ProductList from './components/ProductList';
 import ProductDetail from './components/ProductDetail';
 import Inbox from './components/Inbox';
 import ChatWindow from './components/ChatWindow';
+import AdminPanel from './components/AdminPanel';
 import { usePushNotifications } from './hooks/usePushNotifications';
 import axios from 'axios';
 
 const API_URL = "https://campuswap.onrender.com";
+const ADMIN_USER_ID = 60001;
 
 const injectStyles = () => {
   if (document.getElementById('cs-font-link')) return;
@@ -33,62 +35,40 @@ function App() {
   const [showPushBanner, setShowPushBanner] = useState(false);
 
   const { permission, requestPermission } = usePushNotifications(user);
+  const isAdmin = user?.id === ADMIN_USER_ID;
 
-  // ─── History helpers ───────────────────────────────────────
-  const pushHistory = useCallback((state) => {
-    window.history.pushState(state, '');
-  }, []);
+  const pushHistory = useCallback((state) => { window.history.pushState(state, ''); }, []);
 
-  // Navigate to a view with history
   const navigateTo = useCallback((newView, extra = {}) => {
     pushHistory({ view: newView, ...extra });
     setView(newView);
   }, [pushHistory]);
 
-  // Navigate to product detail with history
   const openProduct = useCallback((product) => {
     pushHistory({ view: 'product', productId: product.id });
     setSelectedProduct(product);
   }, [pushHistory]);
 
-  // ─── Browser back button handler ──────────────────────────
   useEffect(() => {
     const handlePopState = (e) => {
       const state = e.state;
-
       if (!state || state.view === null || state.view === undefined) {
-        // Back to home
-        setView(null);
-        setSelectedProduct(null);
-        setActiveConversation(null);
-        setShowForm(false);
-        return;
+        setView(null); setSelectedProduct(null); setActiveConversation(null); setShowForm(false); return;
       }
-
       if (state.view === 'product') {
         setView(null);
         const product = products.find(p => p.id === state.productId);
-        setSelectedProduct(product || null);
-        return;
+        setSelectedProduct(product || null); return;
       }
-
-      if (state.view === 'chat') {
-        setView('inbox');
-        return;
-      }
-
-      setView(state.view);
-      setSelectedProduct(null);
+      if (state.view === 'chat') { setView('inbox'); return; }
+      setView(state.view); setSelectedProduct(null);
     };
-
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [products]);
 
-  // ─── Init ─────────────────────────────────────────────────
   useEffect(() => {
     injectStyles();
-    // Set initial history state so back button works from first page
     window.history.replaceState({ view: null }, '');
     const savedUser = localStorage.getItem('user');
     if (savedUser) setUser(JSON.parse(savedUser));
@@ -132,66 +112,40 @@ function App() {
       try {
         const reg = await navigator.serviceWorker.ready;
         const sub = await reg.pushManager.getSubscription();
-        if (sub) {
-          await sub.unsubscribe();
-          await axios.delete(`${API_URL}/api/push/unsubscribe`, { headers: { Authorization: `Bearer ${token}` } });
-        }
+        if (sub) { await sub.unsubscribe(); await axios.delete(`${API_URL}/api/push/unsubscribe`, { headers: { Authorization: `Bearer ${token}` } }); }
       } catch {}
     }
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem('token'); localStorage.removeItem('user');
     setUser(null); setSelectedProduct(null); setShowForm(false);
-    setActiveConversation(null); setUnreadCount(0);
-    setShowPushBanner(false);
-    // Reset history to home
-    window.history.replaceState({ view: null }, '');
-    setView(null);
+    setActiveConversation(null); setUnreadCount(0); setShowPushBanner(false);
+    window.history.replaceState({ view: null }, ''); setView(null);
   };
 
-  const handleLoginSuccess = (loggedUser) => {
-    setUser(loggedUser);
-    window.history.replaceState({ view: null }, '');
-    setView(null);
-  };
+  const handleLoginSuccess = (loggedUser) => { setUser(loggedUser); window.history.replaceState({ view: null }, ''); setView(null); };
 
   const handleMessageSeller = async (product) => {
     if (!user) { navigateTo('login'); return; }
     const token = localStorage.getItem('token');
     try {
-      const res = await axios.post(
-        `${API_URL}/api/chat/conversation`,
-        { product_id: product.id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await axios.post(`${API_URL}/api/chat/conversation`, { product_id: product.id }, { headers: { Authorization: `Bearer ${token}` } });
       setActiveConversation({ ...res.data.conversation, product });
-      setSelectedProduct(null);
-      navigateTo('chat');
+      setSelectedProduct(null); navigateTo('chat');
     } catch (err) { alert(err.response?.data?.message || 'Could not open chat.'); }
   };
 
-  // ─── Back action for nav back button ──────────────────────
-  const handleBack = () => {
-    window.history.back(); // triggers popstate which handles state
-  };
-
+  const handleBack = () => { window.history.back(); };
   const hasBack = view !== null || selectedProduct !== null;
   const isOnAuthPage = view === 'login' || view === 'signup' || view === 'forgot';
   const isOnChatPage = view === 'chat';
   const isOnInboxPage = view === 'inbox';
+  const isOnAdminPage = view === 'admin';
 
-  // ─── Nav ──────────────────────────────────────────────────
   const Nav = () => (
     <nav className="cs-nav">
       <div className="cs-nav-inner">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {hasBack && (
-            <button className="cs-btn-nav-back" onClick={handleBack}>← Back</button>
-          )}
-          <div className="cs-logo" onClick={() => {
-            setSelectedProduct(null); setShowForm(false);
-            window.history.replaceState({ view: null }, '');
-            setView(null);
-          }}>
+          {hasBack && <button className="cs-btn-nav-back" onClick={handleBack}>← Back</button>}
+          <div className="cs-logo" onClick={() => { setSelectedProduct(null); setShowForm(false); window.history.replaceState({ view: null }, ''); setView(null); }}>
             CampuSwap ⚡
           </div>
         </div>
@@ -199,7 +153,15 @@ function App() {
           {user ? (
             <>
               <span className="cs-greeting">Hey, <span>{user.name.split(' ')[0]}</span></span>
-              {!isOnInboxPage && !isOnChatPage && (
+              {isAdmin && !isOnAdminPage && (
+                <button
+                  onClick={() => navigateTo('admin')}
+                  style={{ padding: '6px 12px', background: 'rgba(255,107,53,0.1)', color: 'var(--orange)', border: '1px solid rgba(255,107,53,0.2)', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+                >
+                  ⚡ Admin
+                </button>
+              )}
+              {!isOnInboxPage && !isOnChatPage && !isOnAdminPage && (
                 <button className="cs-btn-inbox" onClick={() => navigateTo('inbox')}>
                   💬 Inbox
                   {unreadCount > 0 && <span className="cs-unread-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
@@ -218,63 +180,37 @@ function App() {
     </nav>
   );
 
-  // ─── Render ───────────────────────────────────────────────
   return (
     <div className="cs-app">
       <Nav />
 
-      {view === 'login' && (
-        <Login
-          switchToSignup={() => navigateTo('signup')}
-          onLoginSuccess={handleLoginSuccess}
-          switchToForgot={() => navigateTo('forgot')}
-        />
-      )}
-      {view === 'signup' && (
-        <Signup switchToLogin={() => navigateTo('login')} onLoginSuccess={handleLoginSuccess} />
-      )}
-      {view === 'forgot' && (
-        <ForgotPassword onBack={() => navigateTo('login')} onResetSuccess={() => navigateTo('login')} />
-      )}
+      {view === 'login' && <Login switchToSignup={() => navigateTo('signup')} onLoginSuccess={handleLoginSuccess} switchToForgot={() => navigateTo('forgot')} />}
+      {view === 'signup' && <Signup switchToLogin={() => navigateTo('login')} onLoginSuccess={handleLoginSuccess} />}
+      {view === 'forgot' && <ForgotPassword onBack={() => navigateTo('login')} onResetSuccess={() => navigateTo('login')} />}
+      {view === 'admin' && isAdmin && <AdminPanel user={user} onBack={() => navigateTo(null)} />}
 
       {view === 'inbox' && user && (
         <main className="cs-main">
           <h2 className="cs-inbox-title">💬 Inbox</h2>
-          <Inbox user={user} onOpenChat={(conv) => {
-            setActiveConversation(conv);
-            navigateTo('chat');
-          }} />
+          <Inbox user={user} onOpenChat={(conv) => { setActiveConversation(conv); navigateTo('chat'); }} />
         </main>
       )}
 
       {view === 'chat' && user && activeConversation && (
-        <ChatWindow
-          conversation={activeConversation}
-          user={user}
-          onBack={() => navigateTo('inbox')}
-          onMessageRead={fetchUnreadCount}
-        />
+        <ChatWindow conversation={activeConversation} user={user} onBack={() => navigateTo('inbox')} onMessageRead={fetchUnreadCount} />
       )}
 
       {!view && (
         <>
           {selectedProduct ? (
             <main className="cs-main">
-              <ProductDetail
-                product={selectedProduct}
-                onBack={() => { setSelectedProduct(null); window.history.back(); }}
-                onLoginRequired={() => navigateTo('login')}
-                isLoggedIn={!!user}
-                onMessageSeller={handleMessageSeller}
-              />
+              <ProductDetail product={selectedProduct} onBack={() => { setSelectedProduct(null); window.history.back(); }} onLoginRequired={() => navigateTo('login')} isLoggedIn={!!user} onMessageSeller={handleMessageSeller} />
             </main>
           ) : (
             <>
               {!user && (
                 <section className="cs-hero">
-                  <h1 className="cs-hero-title">
-                    Buy & Sell on Campus,<br /><span>Instantly</span>
-                  </h1>
+                  <h1 className="cs-hero-title">Buy & Sell on Campus,<br /><span>Instantly</span></h1>
                   <p className="cs-hero-sub">Textbooks, electronics, hostel essentials — find what you need from students around you.</p>
                   <div className="cs-hero-actions">
                     <button className="cs-btn-hero-primary" onClick={() => navigateTo('signup')}>Start selling free →</button>
@@ -287,20 +223,16 @@ function App() {
                   </div>
                 </section>
               )}
-
               <main className="cs-main">
                 {showPushBanner && (
                   <div className="cs-push-banner">
-                    <div className="cs-push-banner-text">
-                      <strong>🔔 Enable notifications</strong> — get alerted when someone messages you.
-                    </div>
+                    <div className="cs-push-banner-text"><strong>🔔 Enable notifications</strong> — get alerted when someone messages you.</div>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button className="cs-btn-push-enable" onClick={async () => { await requestPermission(); setShowPushBanner(false); }}>Enable</button>
                       <button className="cs-btn-push-dismiss" onClick={() => { localStorage.setItem('pushBannerDismissed', '1'); setShowPushBanner(false); }}>Not now</button>
                     </div>
                   </div>
                 )}
-
                 {user && (
                   <div className="cs-market-header">
                     <h2 className="cs-market-title">Campus <span>Marketplace</span></h2>
@@ -309,11 +241,7 @@ function App() {
                     </button>
                   </div>
                 )}
-
-                {user && showForm && (
-                  <ProductForm onProductAdded={() => { fetchProducts(); setShowForm(false); }} />
-                )}
-
+                {user && showForm && <ProductForm onProductAdded={() => { fetchProducts(); setShowForm(false); }} />}
                 {!user && (
                   <div className="cs-login-prompt">
                     <div className="cs-login-prompt-text"><strong>Want to sell or chat?</strong> Create a free account in 30 seconds.</div>
@@ -323,14 +251,7 @@ function App() {
                     </div>
                   </div>
                 )}
-
-                <ProductList
-                  products={products}
-                  loading={productsLoading}
-                  onProductClick={openProduct}
-                  onProductDeleted={fetchProducts}
-                  isLoggedIn={!!user}
-                />
+                <ProductList products={products} loading={productsLoading} onProductClick={openProduct} onProductDeleted={fetchProducts} isLoggedIn={!!user} />
               </main>
             </>
           )}

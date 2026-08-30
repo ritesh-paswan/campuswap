@@ -5,9 +5,6 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const pool = require('../db');
 
-// ─────────────────────────────────────────────
-// Rate limiters
-// ─────────────────────────────────────────────
 const otpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, max: 5,
   message: { message: 'Too many OTP requests. Please wait 15 minutes.' }
@@ -23,9 +20,6 @@ const forgotLimiter = rateLimit({
   message: { message: 'Too many reset requests. Please wait 15 minutes.' }
 });
 
-// ─────────────────────────────────────────────
-// Brevo mailer
-// ─────────────────────────────────────────────
 async function sendEmail(toEmail, subject, textContent) {
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
@@ -49,14 +43,26 @@ function generateToken(userId) {
 }
 
 // ─────────────────────────────────────────────
-// 1. SEND OTP
+// 1. SEND OTP — IIITA email only
 // ─────────────────────────────────────────────
 router.post('/send-otp', otpLimiter, async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
   if (!email) return res.status(400).json({ message: 'Email is required.' });
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) return res.status(400).json({ message: 'Invalid email format.' });
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: 'Invalid email format.' });
+  }
+
+  // ✅ Fix 3: Only allow IIITA emails OR the admin Gmail
+  const isIIITA = email.endsWith('@iiita.ac.in');
+  const isAdmin = email === 'sp.riteshpaswan7700@gmail.com';
+
+  if (!isIIITA && !isAdmin) {
+    return res.status(400).json({
+      message: 'Only IIITA email addresses (@iiita.ac.in) are allowed to register.'
+    });
+  }
 
   try {
     const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
@@ -82,7 +88,7 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-// 2. SIGNUP — auto login after registration
+// 2. SIGNUP — auto login
 // ─────────────────────────────────────────────
 router.post('/signup', async (req, res) => {
   const name     = req.body.name?.trim();
@@ -116,7 +122,6 @@ router.post('/signup', async (req, res) => {
 
     await pool.query('DELETE FROM otps WHERE email = ?', [email]);
 
-    // ✅ Auto login — return token immediately after signup
     const token = generateToken(result.insertId);
 
     return res.status(201).json({
@@ -148,6 +153,12 @@ router.post('/login', loginLimiter, async (req, res) => {
     }
 
     const user = users[0];
+
+    // Check if banned
+    if (user.is_banned) {
+      return res.status(403).json({ message: 'Your account has been banned. Contact admin.' });
+    }
+
     const hashToCompare = user.password_hash || user.password;
     const validPassword = await bcrypt.compare(password, hashToCompare);
     if (!validPassword) return res.status(400).json({ message: 'Incorrect password.' });
@@ -162,7 +173,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-// 4. FORGOT PASSWORD — send reset OTP
+// 4. FORGOT PASSWORD
 // ─────────────────────────────────────────────
 router.post('/forgot-password', forgotLimiter, async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
@@ -170,8 +181,6 @@ router.post('/forgot-password', forgotLimiter, async (req, res) => {
 
   try {
     const [users] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
-
-    // Always return success to prevent email enumeration
     if (!users || users.length === 0) {
       return res.json({ message: 'If this email exists, a reset code has been sent.' });
     }
@@ -179,14 +188,13 @@ router.post('/forgot-password', forgotLimiter, async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     await pool.query(
-      `INSERT INTO password_resets (email, otp_code)
-       VALUES (?, ?)
+      `INSERT INTO password_resets (email, otp_code) VALUES (?, ?)
        ON DUPLICATE KEY UPDATE otp_code = ?, created_at = CURRENT_TIMESTAMP`,
       [email, otp, otp]
     );
 
     await sendEmail(email, 'Reset Your CampuSwap Password 🔒',
-      `Your CampuSwap password reset code is: ${otp}\n\nThis code expires in 15 minutes.\nIf you did not request this, ignore this email.`
+      `Your password reset code is: ${otp}\n\nExpires in 15 minutes.`
     );
 
     return res.json({ message: 'If this email exists, a reset code has been sent.' });
@@ -197,7 +205,7 @@ router.post('/forgot-password', forgotLimiter, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-// 5. RESET PASSWORD — verify OTP + set new password
+// 5. RESET PASSWORD
 // ─────────────────────────────────────────────
 router.post('/reset-password', async (req, res) => {
   const email       = req.body.email?.trim().toLowerCase();
@@ -212,16 +220,11 @@ router.post('/reset-password', async (req, res) => {
   }
 
   try {
-    const [records] = await pool.query(
-      'SELECT * FROM password_resets WHERE email = ?',
-      [email]
-    );
-
+    const [records] = await pool.query('SELECT * FROM password_resets WHERE email = ?', [email]);
     if (!records || records.length === 0) {
       return res.status(400).json({ message: 'No reset request found. Please request a new code.' });
     }
 
-    // Check OTP expiry — 15 minutes
     const ageMinutes = (Date.now() - new Date(records[0].created_at).getTime()) / 60000;
     if (ageMinutes > 15) {
       await pool.query('DELETE FROM password_resets WHERE email = ?', [email]);
@@ -233,12 +236,10 @@ router.post('/reset-password', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
     await pool.query(
       'UPDATE users SET password = ?, password_hash = ? WHERE email = ?',
       [hashedPassword, hashedPassword, email]
     );
-
     await pool.query('DELETE FROM password_resets WHERE email = ?', [email]);
 
     return res.json({ message: 'Password reset successfully! You can now sign in.' });
